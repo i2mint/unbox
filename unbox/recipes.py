@@ -85,6 +85,8 @@ def print_imports_of_package(
 import re
 from typing import Mapping, Union
 from types import ModuleType
+from itertools import groupby
+
 from py2store import LocalTextStore
 
 Files = Union[str, Mapping, ModuleType]
@@ -100,6 +102,39 @@ def get_py_files(files: Files):
         files = LocalTextStore(files + path_sep + '{}.py')
     assert isinstance(files, Mapping)
     return files
+
+
+def _preproces_files_and_pattern(files: Files, pattern: Union[str, re.Pattern]):
+    """helper"""
+    files = get_py_files(files)
+    if isinstance(pattern, str):
+        pattern = re.compile(pattern)
+    return files, pattern
+
+
+def key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
+    """Generates (k, line) pairs for every line of every k that has a pattern match
+
+    :param files: A source of py files (e.g. module, root directory, or a Mapping itself)
+    :param pattern: A string or re.Pattern to match and count
+    :return: A generator of (k, pattern_counts) pairs
+
+    See also: key_and_pattern_counts
+    """
+    files, pattern = _preproces_files_and_pattern(files, pattern)
+    for k, contents in files.items():
+        for line in contents.splitlines(keepends=False):
+            if pattern.search(line):
+                yield k, line
+
+
+def print_key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
+    """Print (k, line) pairs for every line of every k that has a pattern match"""
+    for k, lines in groupby(key_and_matched_lines(files, pattern), key=lambda x: x[0]):
+        m = [x[1] for x in lines]
+        m = '\n\t'.join(m)
+        if m:
+            print(f"{k}:\n\t{m}")
 
 
 def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
@@ -121,9 +156,7 @@ def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
     [('__init__.py', 0), ('base.py', 0), ('recipes.py', 2)]
 
     """
-    files = get_py_files(files)
-    if isinstance(pattern, str):
-        pattern = re.compile(pattern)
+    files, pattern = _preproces_files_and_pattern(files, pattern)
     for k, contents in files.items():
         pattern_count = len(pattern.findall(contents))
         yield k, pattern_count
