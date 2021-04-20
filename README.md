@@ -18,6 +18,9 @@ and then do what you do with dicts...
 
 ```python
 >>> import dol
+>>> import unbox
+>>> s = unbox.ModuleNamesImportedByModule(dol)  # make a store containing the modules of the `dol` package
+>>> # Now wee how you can do things you do with dicts
 >>> len(s)
 15
 >>> list(s)
@@ -37,9 +40,13 @@ and then do what you do with dicts...
  'dol.trans',
  'dol.util']
 >>> 'dol.appendable' in s
->>> s['dol.appendable']
+>>> # The values of `s` are sets of modules imported by a module.
+>>> s['dol.appendable']  # what does dol.appendable import?
 {'collections.abc', 'dol.trans', 'time', 'types', 'typing'}
 ```
+
+Check out `ModulesImportedByModule` also, which gives you a `Mapping` with module objects 
+as keys, and `findimports.ImportInfo` instances as values.
 
 ## imports_for
 

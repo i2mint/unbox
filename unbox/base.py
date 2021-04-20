@@ -77,7 +77,7 @@ class ModulesColl(Collection):
             yield module
 
 
-class ModuleImportsBase(KvReader, ModulesColl):
+class ModulesImportedByModule(KvReader, ModulesColl):
     @staticmethod
     def _key_to_val(k):
         return k.imported_names
@@ -96,12 +96,12 @@ def modname_to_modobj(self, modname):
 
 # TODO: Handle warnings -- there are way too many, way too often
 @wrap_kvs(
-    name="ModuleImports",
+    name="NamesImportedByModule",
     key_of_id=modobj_to_modname,
     id_of_key=modname_to_modobj,
     __module__=__name__,
 )
-class ModuleImports(ModuleImportsBase):
+class ModuleNamesImportedByModule(ModulesImportedByModule):
     @staticmethod
     def _key_to_val(k):
         return k.imports
@@ -110,6 +110,8 @@ class ModuleImports(ModuleImportsBase):
         for k, v in self.items():
             print(f"{k}" + "\n" + "\n".join("    " + x for x in v))
 
+
+ModuleImports = ModuleNamesImportedByModule  # backcompatibility alias
 
 # A few useful applications #####################################################################################
 
@@ -242,7 +244,7 @@ def imports_for(root, post=set):
     """
     import itertools
 
-    m = ModuleImports(root)
+    m = ModuleNamesImportedByModule(root)
     imports_gen = itertools.chain.from_iterable(tuple(v) for v in m.values())
     if callable(post):
         return post(imports_gen)
