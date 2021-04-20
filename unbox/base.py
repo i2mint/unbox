@@ -131,10 +131,15 @@ _your_python_version = "{}.{}".format(*sys.version_info[:2])
 
 
 def _get_buitin_module_names():
-    s = RelPathFileStringReader(standard_lib_names_data_dir)
-    if _your_python_version not in python_versions:
-        raise ValueError(f"Not a version that is validated by this code: {_your_python_version}")
-    return set(s[_your_python_version + '.csv'].split('\n'))
+    try:
+        s = RelPathFileStringReader(standard_lib_names_data_dir)
+        if _your_python_version not in python_versions:
+            raise ValueError(f"Not a version that is validated by this code: {_your_python_version}")
+        return set(s[_your_python_version + '.csv'].split('\n'))
+    except KeyError as e:
+        from warnings import warn
+        warn(f"It seems I can't access the python builtin names data. I'll return an empty set. Error: {e}")
+        return set()
 
 
 # builtin_module_names = {x.name for x in pkgutil.iter_modules()}
