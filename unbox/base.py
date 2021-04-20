@@ -123,7 +123,11 @@ python_versions = ('2.7', '3.5', '3.6', '3.7', '3.8', '3.9')
 try:
     from importlib.resources import files  # ... and any other things you want to get
 except ImportError:
-    from importlib_resources import files  # pip install importlib_resources
+    try:
+        from importlib_resources import files  # pip install importlib_resources
+    except ModuleNotFoundError:
+        raise ModuleNotFoundError("No module named 'importlib_resources'. "
+                                  "pip install importlib_resources or conda install importlib_resources")
 
 standard_lib_names_data_dir = str(files('unbox').joinpath('data', 'standard_lib_names'))
 
