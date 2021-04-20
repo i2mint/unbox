@@ -36,9 +36,9 @@ def imports_of_package(
     ...                          module_dotpath_filt = lambda x: '__init__' not in x,
     ...                          depth=1):
     ...     print(f"{module_dotpath}: {imported_module_dotpaths[:3]}")
-    unbox.recipes: ['importlib', 'os', 'py2store']
-    unbox.base: ['builtins', 'collections', 'findimports']
-
+    unbox._acquire_builtin_names: ['bs4', 'contextlib', 'dol.filesys']
+    unbox.recipes: ['importlib', 'itertools', 'os']
+    unbox.base: ['builtins', 'collections', 'dol']
     """
     if isinstance(package, str):
         if os.path.exists(package):
@@ -153,7 +153,7 @@ def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
 
     >>> import unbox
     >>> sorted(key_and_pattern_counts(unbox, 'supercalifragilisticexpialidocious'))
-    [('__init__.py', 0), ('base.py', 0), ('recipes.py', 2)]
+    [('__init__.py', 0), ('_acquire_builtin_names.py', 0), ('base.py', 0), ('recipes.py', 2)]
 
     """
     files, pattern = _preproces_files_and_pattern(files, pattern)
