@@ -11,7 +11,7 @@ except ModuleNotFoundError:
         "You'll need the findimports module for that! Try `pip install findimports`"
     )
 
-from py2store import Collection, KvReader, lazyprop, wrap_kvs
+from dol import Collection, KvReader, lazyprop, wrap_kvs
 
 
 class MyModuleGraph(ModuleGraph):
@@ -115,8 +115,30 @@ class ModuleImports(ModuleImportsBase):
 
 import pkgutil
 import builtins
+import sys
+from dol.filesys import RelPathFileStringReader
 
-builtin_module_names = {x.name for x in pkgutil.iter_modules()}
+python_versions = ('2.7', '3.5', '3.6', '3.7', '3.8', '3.9')
+
+try:
+    from importlib.resources import files  # ... and any other things you want to get
+except ImportError:
+    from importlib_resources import files  # pip install importlib_resources
+
+standard_lib_names_data_dir = str(files('unbox').joinpath('data', 'standard_lib_names'))
+
+_your_python_version = "{}.{}".format(*sys.version_info[:2])
+
+
+def _get_buitin_module_names():
+    s = RelPathFileStringReader(standard_lib_names_data_dir)
+    if _your_python_version not in python_versions:
+        raise ValueError(f"Not a version that is validated by this code: {_your_python_version}")
+    return set(s[_your_python_version + '.csv'].split('\n'))
+
+
+# builtin_module_names = {x.name for x in pkgutil.iter_modules()}
+builtin_module_names = _get_buitin_module_names()
 builtin_pkg_names = {x.name for x in pkgutil.iter_modules() if x.ispkg}
 builtin_non_pkg_names = {x.name for x in pkgutil.iter_modules() if not x.ispkg}
 builtin_obj_names = {x.lower() for x in dir(builtins)}
