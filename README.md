@@ -9,47 +9,36 @@ Lots of little goodies to help you analyze the imports of your, or others' code.
 
 ## A dict-like interface
 
-The base of `unbox` is just the `py2store` interface to `findimports`, which then allows us to 
+The base of `unbox` is just the `dol` interface to `findimports`, which then allows us to 
 offer a bunch of functionalities easily. 
 
-Say you wanted to know what py2store was made of. 
-The py2store way of doing this is to make a `Mapping` (i.e. a key-value dict-like interface), 
+Say you wanted to know what dol was made of. 
+The dol way of doing this is to make a `Mapping` (i.e. a key-value dict-like interface), 
 and then do what you do with dicts...
 
 ```python
->>> import py2store
+>>> import dol
 >>> len(s)
-['py2store.__init__',
- 'py2store.access',
- 'py2store.appendable',
- 'py2store.base',
- 'py2store.caching',
- 'py2store.core',
- 'py2store.dig',
- 'py2store.errors',
- 'py2store.examples.__init__',
- 'py2store.examples.kv_walking',
- 'py2store.examples.last_key_inserted',
- 'py2store.examples.python_code_stats',
- 'py2store.examples.write_caches',
-  ...
- 'py2store.filesys',
- 'py2store.key_mappers.__init__',
- 'py2store.key_mappers.naming',
- 'py2store.key_mappers.paths',
- 'py2store.key_mappers.str_utils',
- 'py2store.key_mappers.tuples',
- 'py2store.misc',
- 'py2store.mixins',
- 'py2store.my.__init__',
- 'py2store.my.grabbers',
- 'py2store.utils.sliceable',
- 'py2store.utils.timeseries_caching',
- 'py2store.utils.uri_utils']
- 
->>> 'py2store.appendable' in s
->>> s['py2store.appendable']
-{'collections.abc', 'py2store.trans', 'time', 'types', 'typing'}
+15
+>>> list(s)
+['dol.__init__',
+ 'dol.appendable',
+ 'dol.base',
+ 'dol.caching',
+ 'dol.core',
+ 'dol.dig',
+ 'dol.errors',
+ 'dol.filesys',
+ 'dol.mixins',
+ 'dol.naming',
+ 'dol.paths',
+ 'dol.signatures',
+ 'dol.sources',
+ 'dol.trans',
+ 'dol.util']
+>>> 'dol.appendable' in s
+>>> s['dol.appendable']
+{'collections.abc', 'dol.trans', 'time', 'types', 'typing'}
 ```
 
 ## imports_for
@@ -78,4 +67,29 @@ imports_for.first_level_count  # count of imported first level names (e.g. 'os' 
 imports_for.third_party  # imported (first level) names that are not builtin names (most probably third party packages)"
 ```
 
+## Collections of python names
+
+Check out the contents of these collections:
+
+```python
+from unbox import (
+    builtin_module_names,
+    scanned_standard_lib_names,
+    all_accessible_modules,
+    all_accessible_pkg_names,
+    all_accessible_non_pkg_module_names,
+    builtin_obj_names,
+    python_names
+)
+```
+
+For example, `builtin_module_names` will be a set of names that are 
+[documented](`https://docs.python.org/3.8/library/`) (and importable in 3.8). 
+
+The `scanned_standard_lib_names` set is similar, but the names are obtained by scanning 
+the local standard library file names (so include things like easter eggs and some possibly non-importable packages).
+
+`all_accessible_modules` will be the list of all modules accessible in your python path.
+
+And so on...
 

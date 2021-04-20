@@ -134,37 +134,32 @@ standard_lib_names_data_dir = str(files('unbox').joinpath('data', 'standard_lib_
 _your_python_version = "{}.{}".format(*sys.version_info[:2])
 
 
-def _get_buitin_module_names():
+def documented_builtin_module_names():
+    """Will fetch a prepopulated list of builtin module (and submodule) names for the environment's python version.
+
+    These were parsed from ``https://docs.python.org/{version}/library/`` and saved in package's data
+    (this data, for all supported versions, can be found here
+    too: https://github.com/i2mint/unbox/tree/master/unbox/data/standard_lib_names)
+
+    Supported python versions: '2.7', '3.5', '3.6', '3.7', '3.8', and '3.9'
+
+    I python version not supported, will return an empty set (with a warning).
+
+    Note: Only names that are importable in 3.8 are included.
+    That is, 2.7 list will contain names that are documented AND importable in 3.8.
+
+    See also:
+    """
     try:
         s = RelPathFileStringReader(standard_lib_names_data_dir)
         if _your_python_version not in python_versions:
-            raise ValueError(f"Not a version that is validated by this code: {_your_python_version}")
+            warnings.warn(
+                f"Not a version that is validated by this code: {_your_python_version}. Returning empty set.")
+            return set()
         return set(s[_your_python_version + '.csv'].split('\n'))
     except KeyError as e:
-        from warnings import warn
-        warn(f"It seems I can't access the python builtin names data. I'll return an empty set. Error: {e}")
+        warnings.warn(f"It seems I can't access the python builtin names data. I'll return an empty set. Error: {e}")
         return set()
-
-
-# builtin_module_names = {x.name for x in pkgutil.iter_modules()}
-builtin_module_names = _get_buitin_module_names()
-builtin_pkg_names = {x.name for x in pkgutil.iter_modules() if x.ispkg}
-builtin_non_pkg_names = {x.name for x in pkgutil.iter_modules() if not x.ispkg}
-builtin_obj_names = {x.lower() for x in dir(builtins)}
-
-py_reserved_words = {
-    'and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec', 'finally',
-    'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or', 'pass', 'print', 'raise', 'return',
-    'try', 'while', 'with', 'yield'
-}
-
-# TODO: Still let's through some known builtings, so listing here:
-builtin_names_are_still_not_caught = {'time', 'sys', 'itertools'}
-
-builtin_names = ({'builtins'} | builtin_module_names | builtin_obj_names
-                 | py_reserved_words | builtin_names_are_still_not_caught)
-
-standard_lib_dir = os.path.dirname(os.__file__)
 
 
 def scan_locally_for_standard_lib_names(include_underscored=True):
@@ -201,12 +196,35 @@ def scan_locally_for_standard_lib_names(include_underscored=True):
             yield name
 
 
+standard_lib_dir = os.path.dirname(os.__file__)
 scan_locally_for_standard_lib_names.standard_lib_dir = standard_lib_dir
+
+builtin_module_names = documented_builtin_module_names()
+all_accessible_modules = list(pkgutil.iter_modules())
+all_accessible_pkg_names = {x.name for x in all_accessible_modules if x.ispkg}
+all_accessible_non_pkg_module_names = {x.name for x in all_accessible_modules if not x.ispkg}
+builtin_obj_names = {x.lower() for x in dir(builtins)}
+
+py_reserved_words = {
+    'and', 'as', 'assert', 'break', 'class', 'continue', 'def', 'del', 'elif', 'else', 'except', 'exec', 'finally',
+    'for', 'from', 'global', 'if', 'import', 'in', 'is', 'lambda', 'not', 'or', 'pass', 'print', 'raise', 'return',
+    'try', 'while', 'with', 'yield'
+}
+
+# # TODO: Still let's through some known builtings, so listing here:
+# builtin_names_are_still_not_caught = {'time', 'sys', 'itertools'}
+
+all_python_names = (
+        builtin_module_names
+        | builtin_obj_names
+        | py_reserved_words
+        | all_accessible_pkg_names
+)
 
 scanned_standard_lib_names = set(scan_locally_for_standard_lib_names(include_underscored=True))
 
 # A wide list of POTENTIAL builtin names (standard libs, reserved words, ...). Some false positives
-python_names = builtin_names | scanned_standard_lib_names
+python_names = all_python_names | scanned_standard_lib_names
 
 
 def imports_for(root, post=set):
