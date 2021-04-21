@@ -41,4 +41,4 @@ with suppress(ModuleNotFoundError):
 
         for version in python_versions:
             names = documented_names_for_python_version(version)
-            s[version + '.csv'] = "\n".join(sorted(names))
+            s[version + '.csv'] = "\n".join(sorted(set(names)))

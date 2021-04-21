@@ -78,9 +78,6 @@ crypt
 csv
 ctypes
 curses
-curses
-curses
-curses
 datetime
 dbhash
 dbm
@@ -148,8 +145,6 @@ keyword
 linecache
 locale
 logging
-logging
-logging
 macostools
 macpath
 mailbox
@@ -175,7 +170,6 @@ nntplib
 numbers
 operator
 optparse
-os
 os
 ossaudiodev
 parser
@@ -218,7 +212,6 @@ shlex
 shutil
 signal
 site
-site
 smtpd
 smtplib
 sndhdr
@@ -245,7 +238,6 @@ tarfile
 telnetlib
 tempfile
 termios
-test
 test
 textwrap
 thread
@@ -276,14 +268,6 @@ whichdb
 winsound
 wsgiref
 xdrlib
-xml
-xml
-xml
-xml
-xml
-xml
-xml
-xml
 xml
 xmlrpclib
 zipfile
