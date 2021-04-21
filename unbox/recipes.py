@@ -1,6 +1,9 @@
 import os
 import importlib
-from py2store import LocalTextStore, filt_iter, wrap_kvs, cached_keys
+from dol import wrap_kvs, filt_iter
+from dol.filesys import RelPathFileStringReader
+
+from unbox import imports_for
 
 
 # TODO: Replace wasteful LocalTextStore base with file collection base and key->importlib.import_module(key) def of values
@@ -9,12 +12,9 @@ from py2store import LocalTextStore, filt_iter, wrap_kvs, cached_keys
     id_of_key=lambda k: k.replace('.', os.path.sep) + '.py',
     postget=lambda k, v: importlib.import_module(k)
 )
-class ModuleStrings(LocalTextStore):
+@filt_iter(filt=lambda k: k.endswith('.py'))
+class ModuleStrings(RelPathFileStringReader):
     """Keys are module dotpaths and values are modules"""
-
-
-import unbox
-from types import ModuleType
 
 
 def imports_of_package(
@@ -35,10 +35,11 @@ def imports_of_package(
     ...                          unbox,
     ...                          module_dotpath_filt = lambda x: '__init__' not in x,
     ...                          depth=1):
-    ...     print(f"{module_dotpath}: {imported_module_dotpaths[:3]}")
-    unbox._acquire_builtin_names: ['bs4', 'contextlib', 'dol.filesys']
-    unbox.recipes: ['importlib', 'itertools', 'os']
-    unbox.base: ['builtins', 'collections', 'dol']
+    ...     print(f"{module_dotpath}: {sorted(imported_module_dotpaths)[:3]}")
+    _acquire_builtin_names: ['bs4', 'contextlib', 'dol.filesys']
+    recipes: ['dol', 'dol.filesys', 'importlib']
+    base: ['builtins', 'collections', 'contextlib']
+
     """
     if isinstance(package, str):
         if os.path.exists(package):
@@ -51,14 +52,14 @@ def imports_of_package(
     else:
         raise TypeError(f"Couldn't resolve {package}")
 
-    s = ModuleStrings(rootdir + '{}.py', depth)
+    s = ModuleStrings(rootdir, max_levels=depth)
     for module_dotpath, imported_module_dotpaths in s.items():
         if (module_dotpath_filt or (lambda x: True))(module_dotpath):
             imported_module_dotpaths = sorted(
                 filter(
                     imported_module_dotpath_filt,
                     set(
-                        unbox.imports_for(imported_module_dotpaths))))
+                        imports_for(imported_module_dotpaths))))
             yield module_dotpath, imported_module_dotpaths
 
 

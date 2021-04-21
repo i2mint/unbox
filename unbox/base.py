@@ -5,12 +5,7 @@ from functools import wraps
 from importlib import import_module
 import warnings
 
-try:
-    from findimports import ModuleGraph
-except ModuleNotFoundError:
-    raise ModuleNotFoundError(
-        "You'll need the findimports module for that! Try `pip install findimports`"
-    )
+from findimports import ModuleGraph
 
 from dol import Collection, KvReader, lazyprop, wrap_kvs
 
