@@ -91,10 +91,10 @@ from unbox import (
 ```
 
 For example, `builtin_module_names` will be a set of names that are 
-[documented](`https://docs.python.org/3.8/library/`) (and importable in 3.8). 
+[documented](`https://docs.python.org/3.8/library/`) **and** importable on your system.
 
 The `scanned_standard_lib_names` set is similar, but the names are obtained by scanning 
-the local standard library file names (so include things like easter eggs and some possibly non-importable packages).
+the local standard library file names -- so include things like easter eggs (`this`, `antigravity`).
 
 `all_accessible_modules` will be the list of all modules accessible in your python path.
 
