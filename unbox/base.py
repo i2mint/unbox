@@ -1,4 +1,5 @@
 import os
+from contextlib import suppress
 from types import ModuleType
 from functools import wraps
 from importlib import import_module
@@ -12,6 +13,16 @@ except ModuleNotFoundError:
     )
 
 from dol import Collection, KvReader, lazyprop, wrap_kvs
+
+
+def is_importable(name):
+    if name in {'antigravity', 'this'}:  # we know these, but don't want to print or open browser page to verify!
+        return True
+    else:
+        with suppress(ModuleNotFoundError):
+            import_module(name)  # if this works...
+            return True
+    return False
 
 
 class MyModuleGraph(ModuleGraph):
@@ -113,7 +124,7 @@ class ModuleNamesImportedByModule(ModulesImportedByModule):
 
 ModuleImports = ModuleNamesImportedByModule  # backcompatibility alias
 
-# A few useful applications #####################################################################################
+# A few useful applications ############################################################################################
 
 import pkgutil
 import builtins
@@ -137,7 +148,8 @@ _your_python_version = "{}.{}".format(*sys.version_info[:2])
 
 
 def documented_builtin_module_names():
-    """Will fetch a prepopulated list of builtin module (and submodule) names for the environment's python version.
+    """
+    Will yield from a prepopulated list of builtin module (and submodule) names for the environment's python version.
 
     These were parsed from ``https://docs.python.org/{version}/library/`` and saved in package's data
     (this data, for all supported versions, can be found here
@@ -147,21 +159,16 @@ def documented_builtin_module_names():
 
     I python version not supported, will return an empty set (with a warning).
 
-    Note: Only names that are importable in 3.8 are included.
-    That is, 2.7 list will contain names that are documented AND importable in 3.8.
-
-    See also:
+    See also: scan_locally_for_standard_lib_names
     """
     try:
         s = RelPathFileStringReader(standard_lib_names_data_dir)
         if _your_python_version not in python_versions:
             warnings.warn(
-                f"Not a version that is validated by this code: {_your_python_version}. Returning empty set.")
-            return set()
-        return set(s[_your_python_version + '.csv'].split('\n'))
+                f"Not a version that is validated by this code: {_your_python_version}. Yielding nothing")
+        yield from s[_your_python_version + '.csv'].split('\n')
     except KeyError as e:
-        warnings.warn(f"It seems I can't access the python builtin names data. I'll return an empty set. Error: {e}")
-        return set()
+        warnings.warn(f"It seems I can't access the python builtin names data, so I'll yield nothing. Error: {e}")
 
 
 def scan_locally_for_standard_lib_names(include_underscored=True):
@@ -169,8 +176,9 @@ def scan_locally_for_standard_lib_names(include_underscored=True):
     Generates names of standard libs from python environment it was called from.
 
     :param include_underscored: Whether to include names that start with underscore or not.
-
     :keyword standard lib, builtins
+
+    See also: documented_builtin_module_names
 
     >>> standard_lib_names = set(scan_locally_for_standard_lib_names(include_underscored=True))
     >>> # verify that a few known libs are there (including three folders and three py files)
@@ -201,7 +209,9 @@ def scan_locally_for_standard_lib_names(include_underscored=True):
 standard_lib_dir = os.path.dirname(os.__file__)
 scan_locally_for_standard_lib_names.standard_lib_dir = standard_lib_dir
 
-builtin_module_names = documented_builtin_module_names()
+# Some useful collections of names #####################################################################################
+
+builtin_module_names = set(filter(is_importable, documented_builtin_module_names()))
 all_accessible_modules = list(pkgutil.iter_modules())
 all_accessible_pkg_names = {x.name for x in all_accessible_modules if x.ispkg}
 all_accessible_non_pkg_module_names = {x.name for x in all_accessible_modules if not x.ispkg}
@@ -223,11 +233,13 @@ all_python_names = (
         | all_accessible_pkg_names
 )
 
-scanned_standard_lib_names = set(scan_locally_for_standard_lib_names(include_underscored=True))
+scanned_standard_lib_names = set(filter(is_importable, scan_locally_for_standard_lib_names(include_underscored=True)))
 
 # A wide list of POTENTIAL builtin names (standard libs, reserved words, ...). Some false positives
 python_names = all_python_names | scanned_standard_lib_names
 
+
+########################################################################################################################
 
 def imports_for(root, post=set):
     """
