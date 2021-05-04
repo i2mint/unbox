@@ -288,7 +288,7 @@ imports_for.third_party = partial(
     post=lambda module: set(
         xx.split(".")[0]
         for xx in module
-        if xx.split(".")[0] not in python_names
+        if xx.split(".")[0] not in builtin_module_names
     ),
 )
 imports_for.third_party.__doc__ = \
