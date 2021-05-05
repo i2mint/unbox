@@ -7,7 +7,7 @@ from unbox import imports_for
 
 
 def signature_less_builtin_obj_names(caller="signature"):
-    """Generator of builtin names that """
+    """Generator of builtin names that don't have a signature"""
     assert caller in {
         "signature",
         "help",
