@@ -6,22 +6,38 @@ from dol.filesys import RelPathFileStringReader
 from unbox import imports_for
 
 
+def signature_less_builtin_obj_names(caller="signature"):
+    """Generator of builtin names that """
+    assert caller in {
+        "signature",
+        "help",
+    }  # caller='help' is to verify that all callable builtins have help
+    from inspect import signature
+    from unbox.base import builtin_obj_names
+
+    for obj_name in builtin_obj_names:
+        try:
+            exec(f"if callable({obj_name}): signature({obj_name})")
+        except ValueError as e:
+            yield obj_name
+        except NameError:
+            pass  # obviously builtin_obj_names isn't perfect -- some names it has aren't found on your system!
+
+
 # TODO: Replace wasteful LocalTextStore base with file collection base and key->importlib.import_module(key) def of values
 @wrap_kvs(
-    key_of_id=lambda k: k.replace('.py', '').replace(os.path.sep, '.'),
-    id_of_key=lambda k: k.replace('.', os.path.sep) + '.py',
-    postget=lambda k, v: importlib.import_module(k)
+    key_of_id=lambda k: k.replace(".py", "").replace(os.path.sep, "."),
+    id_of_key=lambda k: k.replace(".", os.path.sep) + ".py",
+    postget=lambda k, v: importlib.import_module(k),
 )
-@filt_iter(filt=lambda k: k.endswith('.py'))
+@filt_iter(filt=lambda k: k.endswith(".py"))
 class ModuleStrings(RelPathFileStringReader):
     """Keys are module dotpaths and values are modules"""
 
 
 def imports_of_package(
-        package,
-        module_dotpath_filt=None,
-        imported_module_dotpath_filt=None,
-        depth=None):
+    package, module_dotpath_filt=None, imported_module_dotpath_filt=None, depth=None
+):
     """Generates (module_dotpath, imported_module_dotpaths) pairs from a package, recursively.
 
     :param package: Module, file, folder, or dotpath of package to root the generation from
@@ -58,16 +74,15 @@ def imports_of_package(
             imported_module_dotpaths = sorted(
                 filter(
                     imported_module_dotpath_filt,
-                    set(
-                        imports_for(imported_module_dotpaths))))
+                    set(imports_for(imported_module_dotpaths)),
+                )
+            )
             yield module_dotpath, imported_module_dotpaths
 
 
 def print_imports_of_package(
-        package,
-        module_dotpath_filt=None,
-        imported_module_dotpath_filt=None,
-        depth=None):
+    package, module_dotpath_filt=None, imported_module_dotpath_filt=None, depth=None
+):
     """Prints (module_dotpath, imported_module_dotpaths) pairs from a package, recursively.
 
     :param package: Module, file, folder, or dotpath of package to root the generation from
@@ -77,8 +92,9 @@ def print_imports_of_package(
     :return: prints the (module_dotpath, imported_module_dotpaths) pairs
     """
     for module_dotpath, imported_module_dotpaths in imports_of_package(
-            package, module_dotpath_filt, imported_module_dotpath_filt, depth):
-        t = '\n\t'.join(imported_module_dotpaths)
+        package, module_dotpath_filt, imported_module_dotpath_filt, depth
+    ):
+        t = "\n\t".join(imported_module_dotpaths)
         print(f"{module_dotpath}:\n\t{t}")
 
 
@@ -100,7 +116,7 @@ def get_py_files(files: Files):
     if isinstance(files, str) and os.path.isdir(files):
         if files.endswith(path_sep):
             files = files[:-1]
-        files = LocalTextStore(files + path_sep + '{}.py')
+        files = LocalTextStore(files + path_sep + "{}.py")
     assert isinstance(files, Mapping)
     return files
 
@@ -133,7 +149,7 @@ def print_key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
     """Print (k, line) pairs for every line of every k that has a pattern match"""
     for k, lines in groupby(key_and_matched_lines(files, pattern), key=lambda x: x[0]):
         m = [x[1] for x in lines]
-        m = '\n\t'.join(m)
+        m = "\n\t".join(m)
         if m:
             print(f"{k}:\n\t{m}")
 
