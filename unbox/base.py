@@ -353,6 +353,3 @@ imports_for.third_party.__doc__ = (
     'imported (first level) names that are not builtin names '
     '(most probably third party packages)'
 )
-
-
-

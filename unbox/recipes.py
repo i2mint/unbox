@@ -53,6 +53,7 @@ def imports_of_package(
     ...                          depth=1):
     ...     print(f"{module_dotpath}: {sorted(imported_module_dotpaths)[:3]}")
     _acquire_builtin_names: ['bs4', 'contextlib', 'dol.filesys']
+    missing_install_names: ['collections', 'config2py', 'json']
     recipes: ['dol', 'dol.filesys', 'importlib']
     base: ['builtins', 'collections', 'contextlib']
 
@@ -171,7 +172,8 @@ def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
 
     >>> import unbox
     >>> sorted(key_and_pattern_counts(unbox, 'supercalifragilisticexpialidocious'))
-    [('__init__.py', 0), ('_acquire_builtin_names.py', 0), ('base.py', 0), ('recipes.py', 2)]
+    [('__init__.py', 0), ('_acquire_builtin_names.py', 0), ('base.py', 0), ('missing_install_names.py', 0), ('recipes.py', 2)]
+
 
     """
     files, pattern = _preproces_files_and_pattern(files, pattern)
