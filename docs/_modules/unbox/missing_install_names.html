@@ -1,0 +1,379 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>unbox.missing_install_names &#8212; unbox 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for unbox.missing_install_names</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Finding missing install names</span>
+
+<span class="sd">For doing things like:</span>
+
+<span class="sd">&gt;&gt;&gt; from unbox import print_missing_names</span>
+<span class="sd">&gt;&gt;&gt; import unbox</span>
+<span class="sd">&gt;&gt;&gt; print_missing_names(unbox)</span>
+<span class="sd">bs4</span>
+<span class="sd">requests</span>
+
+<span class="sd">Note: These missing dependencies are real, unpurpose, but don&#39;t affect you.</span>
+
+<span class="sd">You can get the set of missing install names as well as the set of install names</span>
+<span class="sd">that are not used.</span>
+
+<span class="sd">What does this mean?</span>
+
+<span class="sd">Install names are those you have declared you needed to install the packages (like</span>
+<span class="sd">what you put in the ```` section of your ``setup.cfg`` if that&#39;s what you use.</span>
+
+<span class="sd">Why are the missing or unused? It has to do with imports. If you declared you needed a</span>
+<span class="sd">package to be installed (a dependency) but never import it, it&#39;s unused.</span>
+<span class="sd">More importantly, if you use (that is import) a package, but haven&#39;t listed it in the</span>
+<span class="sd">names to be installed, that&#39;s a problem for your users.</span>
+
+<span class="sd">There&#39;s several problems to solve here (and you have function here to solve them).</span>
+
+<span class="sd">One problem: finding the names that are imported. That&#39;s solved by ``import_for`` and</span>
+<span class="sd">the many subfunctions like ``import_for.third_party``.</span>
+
+<span class="sd">Another problem is that the names that are imported are not necessarily the names that</span>
+<span class="sd">should be installed.</span>
+<span class="sd">For example, you ``import sklearn`` but you ``pip install scikit-learn``.</span>
+<span class="sd">That&#39;s annoying. So we need a mapping between import names and install names.</span>
+
+<span class="sd">So we provide a default mapping (which we will expand as users notify us, or we</span>
+<span class="sd">encounter more of those aggravating cases.</span>
+
+<span class="sd">That said, we provide ways for users to specify their own map.</span>
+
+<span class="sd">You can specify an explicit mapping from import name to install name in the form of a</span>
+<span class="sd">dict or any other valid ``Mapping`` instance. You can also add a</span>
+<span class="sd">``IMPORT_TO_INSTALL_NAME_MAP_FILE`` environmental variable pointing to a JSON file path</span>
+<span class="sd">that will be used if this explicit mapping is not given.</span>
+<span class="sd">If you do none of those, the system will use the default mapping, which is expressed by</span>
+<span class="sd">the ``unbox/data/dflt_import_to_install_name_map.json`` file in the packaged data.</span>
+
+<span class="sd">Besides the import vs install name discrepency, there are other reasons you may want</span>
+<span class="sd">to specify your own map.</span>
+<span class="sd">You may want to depend on a particular version of a third-party package,</span>
+<span class="sd">or ensure that the version is greater than a minimum version. So the import names</span>
+<span class="sd">you extracted need to be mapped to a fuller specification. For example, instead</span>
+<span class="sd">of just requiring ``numpy`` you may want to have ``numpy &gt;= 1.3`` in your</span>
+<span class="sd">``setup.cfg`` or ``requirements.txt``.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># TODO: Better handling of the pkg -&gt; file -&gt; names mesh</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Callable</span>
+<span class="kn">import</span> <span class="nn">json</span>
+
+<span class="kn">from</span> <span class="nn">unbox.base</span> <span class="kn">import</span> <span class="n">files</span><span class="p">,</span> <span class="n">data_files</span>
+<span class="kn">from</span> <span class="nn">unbox</span> <span class="kn">import</span> <span class="n">IMPORT_NAMES</span><span class="p">,</span> <span class="n">imports_for</span><span class="p">,</span> <span class="n">NAMES</span><span class="p">,</span> <span class="n">INSTALL_NAMES</span><span class="p">,</span> <span class="n">ROOT</span>
+
+<span class="n">name_map_envvar</span> <span class="o">=</span> <span class="s1">&#39;IMPORT_TO_INSTALL_NAME_MAP_FILE&#39;</span>
+
+<span class="c1"># import to install name: What requirement should be used for a given import name?</span>
+<span class="n">DFLT_NAME_MAP_FILE</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data_files</span> <span class="o">/</span> <span class="s1">&#39;dflt_import_to_install_name_map.json&#39;</span><span class="p">)</span>
+
+<span class="n">import_to_install_name_map_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="n">name_map_envvar</span><span class="p">,</span> <span class="n">DFLT_NAME_MAP_FILE</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">import_to_install_name_map_file</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+    <span class="n">dflt_import_to_install_name_map</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_import_names</span><span class="p">(</span>
+    <span class="n">import_names</span><span class="p">:</span> <span class="n">IMPORT_NAMES</span><span class="p">,</span> <span class="n">imports_finder</span><span class="o">=</span><span class="n">imports_for</span><span class="o">.</span><span class="n">third_party</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NAMES</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">import_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">import_names</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">imports_finder</span><span class="p">(</span><span class="n">import_names</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">import_names</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">import_names</span>
+
+
+<span class="k">def</span> <span class="nf">get_import_to_install_name_map</span><span class="p">(</span><span class="n">import_to_install_name_map</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">import_to_install_name_map</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">import_to_install_name_map</span> <span class="o">=</span> <span class="n">dflt_import_to_install_name_map</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
+        <span class="n">import_to_install_name_map</span><span class="p">,</span> <span class="n">Mapping</span>
+    <span class="p">),</span> <span class="sa">f</span><span class="s1">&#39;Not a mapping: </span><span class="si">{</span><span class="n">import_to_install_name_map</span><span class="si">}</span><span class="s1">&#39;</span>
+    <span class="k">return</span> <span class="n">import_to_install_name_map</span>
+
+
+<span class="k">def</span> <span class="nf">map_if_found</span><span class="p">(</span><span class="n">mapping</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">to_map</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+    <span class="c1"># return [mapping[x] if x in to_map else x for x in mapping]</span>
+    <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">to_map</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">mapping</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">mapping</span><span class="p">[</span><span class="n">x</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">strict</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">x</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">x</span><span class="si">}</span><span class="s1"> not in mapping&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="install_names_for_imports"><a class="viewcode-back" href="../../module_docs/unbox/missing_install_names.html#unbox.missing_install_names.install_names_for_imports">[docs]</a><span class="k">def</span> <span class="nf">install_names_for_imports</span><span class="p">(</span>
+    <span class="n">import_names</span><span class="p">:</span> <span class="n">IMPORT_NAMES</span><span class="p">,</span>
+    <span class="n">import_to_install_name_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get a set of install names, i.e. names that are used in ``pip install PKG_NAME``.</span>
+
+<span class="sd">    There are a few use cases for this.</span>
+
+<span class="sd">    First, the install names can be different from the names that are used to import</span>
+<span class="sd">    a package. For example, you ``import sklearn`` but you ``pip install scikit-learn``.</span>
+
+<span class="sd">    Secondly, you may want to depend on a particular version of a third-party package,</span>
+<span class="sd">    or ensure that the version is greater than a minimum version. So the import names</span>
+<span class="sd">    you extracted need to be mapped to a fuller specification. For example, instead</span>
+<span class="sd">    of just requiring ``numpy`` you may want to have ``numpy &gt;= 1.3`` in your</span>
+<span class="sd">    ``setup.cfg`` or ``requirements.txt``.</span>
+
+<span class="sd">    :param import_names: An iterable of import names, or a module, package,</span>
+<span class="sd">        or filepath/folderpath thereof, to be able to extract them</span>
+<span class="sd">    :param import_to_install_name_map: A dict mapping import names (keys) to install</span>
+<span class="sd">        names</span>
+<span class="sd">    :param strict: Whether to assert that all import_names are in the map</span>
+<span class="sd">    :return:</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">import_names</span> <span class="o">=</span> <span class="n">get_import_names</span><span class="p">(</span><span class="n">import_names</span><span class="p">)</span>
+    <span class="n">import_to_install_name_map</span> <span class="o">=</span> <span class="n">get_import_to_install_name_map</span><span class="p">(</span>
+        <span class="n">import_to_install_name_map</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="nb">set</span><span class="p">(</span><span class="n">map_if_found</span><span class="p">(</span><span class="n">import_to_install_name_map</span><span class="p">,</span> <span class="n">import_names</span><span class="p">,</span> <span class="n">strict</span><span class="p">))</span></div>
+
+
+<span class="k">def</span> <span class="nf">pkg_root_dir_name</span><span class="p">(</span><span class="n">pkg</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">Path</span><span class="p">(</span><span class="n">pkg</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">name</span>
+
+
+<span class="k">def</span> <span class="nf">install_names_from_setup_cfg_file</span><span class="p">(</span><span class="n">pkg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">NAMES</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+    <span class="n">cfg_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">pkg</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">joinpath</span><span class="p">(</span><span class="s1">&#39;setup.cfg&#39;</span><span class="p">))</span>
+
+    <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">cfg_path</span><span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">config2py</span> <span class="kn">import</span> <span class="n">ConfigReader</span>
+        <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">ChainMap</span>
+
+        <span class="n">configs</span> <span class="o">=</span> <span class="n">ConfigReader</span><span class="p">(</span><span class="n">cfg_path</span><span class="p">)</span>
+        <span class="n">install_requires</span> <span class="o">=</span> <span class="n">configs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;options&#39;</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s1">&#39;install_requires&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span>
+        <span class="p">)</span> <span class="ow">or</span> <span class="n">ChainMap</span><span class="p">(</span>  <span class="c1"># try getting it in options section</span>
+            <span class="o">*</span><span class="n">configs</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="s1">&#39;install_requires&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">install_requires</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+
+    <span class="k">return</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">find_install_names</span><span class="p">(</span><span class="n">pkg</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NAMES</span><span class="p">:</span>
+    <span class="n">install_names</span> <span class="o">=</span> <span class="n">install_names_from_setup_cfg_file</span><span class="p">(</span><span class="n">pkg</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">install_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">install_names</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Can&#39;t find install names for </span><span class="si">{</span><span class="n">pkg</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_install_names</span><span class="p">(</span>
+    <span class="n">install_names</span><span class="p">:</span> <span class="n">INSTALL_NAMES</span><span class="p">,</span>
+    <span class="n">install_names_finder</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ROOT</span><span class="p">],</span> <span class="n">NAMES</span><span class="p">]</span> <span class="o">=</span> <span class="n">find_install_names</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NAMES</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">install_names</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">install_names</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">install_names_finder</span><span class="p">(</span><span class="n">install_names</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">install_names</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">install_names</span>
+
+
+<span class="k">def</span> <span class="nf">dependency_diff</span><span class="p">(</span>
+    <span class="n">install_names</span><span class="p">:</span> <span class="n">INSTALL_NAMES</span><span class="p">,</span>
+    <span class="n">import_names</span><span class="p">:</span> <span class="n">IMPORT_NAMES</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">import_to_install_name_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">install_names_finder</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ROOT</span><span class="p">],</span> <span class="n">NAMES</span><span class="p">]</span> <span class="o">=</span> <span class="n">find_install_names</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="n">install_names</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">get_install_names</span><span class="p">(</span><span class="n">install_names</span><span class="p">,</span> <span class="n">install_names_finder</span><span class="p">))</span>
+    <span class="n">install_names_needed_for_imports</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span>
+        <span class="n">install_names_for_imports</span><span class="p">(</span><span class="n">import_names</span><span class="p">,</span> <span class="n">import_to_install_name_map</span><span class="p">,</span> <span class="n">strict</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">missing_install_names</span> <span class="o">=</span> <span class="n">install_names_needed_for_imports</span> <span class="o">-</span> <span class="n">install_names</span>
+    <span class="n">unused_install_names</span> <span class="o">=</span> <span class="n">install_names</span> <span class="o">-</span> <span class="n">install_names_needed_for_imports</span>
+    <span class="k">return</span> <span class="n">missing_install_names</span><span class="p">,</span> <span class="n">unused_install_names</span>
+
+
+<div class="viewcode-block" id="dependency_diff_for_pkg"><a class="viewcode-back" href="../../module_docs/unbox/missing_install_names.html#unbox.missing_install_names.dependency_diff_for_pkg">[docs]</a><span class="k">def</span> <span class="nf">dependency_diff_for_pkg</span><span class="p">(</span>
+    <span class="n">pkg</span><span class="p">,</span>
+    <span class="n">import_to_install_name_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">install_names_finder</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ROOT</span><span class="p">],</span> <span class="n">NAMES</span><span class="p">]</span> <span class="o">=</span> <span class="n">find_install_names</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Get the imported names that are not declared to be installed those names declared </span>
+<span class="sd">    to be installed that are not actually imported. </span>
+
+<span class="sd">    :param pkg: An imported package or path to one.</span>
+<span class="sd">    :param import_to_install_name_map: The mapping between import names and install </span>
+<span class="sd">    names. This is because import names are not always what you need/want to install.</span>
+
+<span class="sd">    Options (you won&#39;t have to deal with most of the time):</span>
+
+<span class="sd">    :param strict: Whether you want to allow only those names that are explicitly </span>
+<span class="sd">    declared in ``import_to_install_name_map`` or not. (Default is False).</span>
+<span class="sd">    :param install_names_finder: A function that takes the package and finds the </span>
+<span class="sd">    declared install names (By default only looks in ``setup.cfg``, but you can make </span>
+<span class="sd">    it look for ``requirements.txt``, or where-ever.</span>
+<span class="sd">    :return: The {import_names - install_names} and {install_names - import_names} sets.</span>
+
+<span class="sd">    The typical use would be when you want to add missing dependencies in your </span>
+<span class="sd">    install instructions. You would then do:</span>
+
+<span class="sd">    &gt;&gt;&gt; import unbox</span>
+<span class="sd">    &gt;&gt;&gt; missing =  dependency_diff_for_pkg(unbox)[0]</span>
+<span class="sd">    &gt;&gt;&gt; print(*sorted(missing), sep=&#39;\n&#39;)</span>
+<span class="sd">    bs4</span>
+<span class="sd">    requests</span>
+
+<span class="sd">    Note: These packages were purposely omitted in the install instructions of </span>
+<span class="sd">    ``unbox`` because they&#39;re only needed in the internal module </span>
+<span class="sd">    ``_acquire_builtin_names`` that is for development purporses only.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">missing_install_names</span><span class="p">,</span> <span class="n">unused_install_names</span> <span class="o">=</span> <span class="n">dependency_diff</span><span class="p">(</span>
+        <span class="n">install_names</span><span class="o">=</span><span class="n">pkg</span><span class="p">,</span>
+        <span class="n">import_names</span><span class="o">=</span><span class="n">pkg</span><span class="p">,</span>
+        <span class="n">import_to_install_name_map</span><span class="o">=</span><span class="n">import_to_install_name_map</span><span class="p">,</span>
+        <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">,</span>
+        <span class="n">install_names_finder</span><span class="o">=</span><span class="n">install_names_finder</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">missing_install_names</span> <span class="o">=</span> <span class="n">missing_install_names</span> <span class="o">-</span> <span class="p">{</span><span class="n">pkg_root_dir_name</span><span class="p">((</span><span class="n">pkg</span><span class="p">))}</span>
+    <span class="k">return</span> <span class="n">missing_install_names</span><span class="p">,</span> <span class="n">unused_install_names</span></div>
+
+
+<div class="viewcode-block" id="print_missing_names"><a class="viewcode-back" href="../../module_docs/unbox/missing_install_names.html#unbox.missing_install_names.print_missing_names">[docs]</a><span class="k">def</span> <span class="nf">print_missing_names</span><span class="p">(</span>
+    <span class="n">pkg</span><span class="p">,</span>
+    <span class="n">import_to_install_name_map</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">strict</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">install_names_finder</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ROOT</span><span class="p">],</span> <span class="n">NAMES</span><span class="p">]</span> <span class="o">=</span> <span class="n">find_install_names</span><span class="p">,</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    See ``dependency_diff_for_pkg`` for more info.</span>
+
+<span class="sd">    &gt;&gt;&gt; import unbox</span>
+<span class="sd">    &gt;&gt;&gt; print_missing_names(unbox)</span>
+<span class="sd">    bs4</span>
+<span class="sd">    requests</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">missing_install_names</span><span class="p">,</span> <span class="n">unused_install_names</span> <span class="o">=</span> <span class="n">dependency_diff_for_pkg</span><span class="p">(</span>
+        <span class="n">pkg</span><span class="o">=</span><span class="n">pkg</span><span class="p">,</span>
+        <span class="n">import_to_install_name_map</span><span class="o">=</span><span class="n">import_to_install_name_map</span><span class="p">,</span>
+        <span class="n">strict</span><span class="o">=</span><span class="n">strict</span><span class="p">,</span>
+        <span class="n">install_names_finder</span><span class="o">=</span><span class="n">install_names_finder</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing_install_names</span><span class="p">),</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">unbox</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox.html">unbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/_acquire_builtin_names.html">unbox._acquire_builtin_names</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/base.html">unbox.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/missing_install_names.html">unbox.missing_install_names</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/recipes.html">unbox.recipes</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;NO COPYRIGHT.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
