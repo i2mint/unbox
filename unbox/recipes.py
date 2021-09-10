@@ -98,19 +98,20 @@ def print_imports_of_package(
         print(f"{module_dotpath}:\n\t{t}")
 
 
-########################################################################################################################
+#########################################################################################
 import re
 from typing import Mapping, Union
 from types import ModuleType
 from itertools import groupby
 
-from py2store import LocalTextStore
+from py2store import LocalTextStore  # TODO: Replace with dol one
 
 Files = Union[str, Mapping, ModuleType]
 path_sep = os.path.sep
 
 
 def get_py_files(files: Files):
+
     if isinstance(files, ModuleType):
         files = os.path.dirname(files.__file__)
     if isinstance(files, str) and os.path.isdir(files):
