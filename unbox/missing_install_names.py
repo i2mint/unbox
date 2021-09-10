@@ -56,6 +56,8 @@ of just requiring ``numpy`` you may want to have ``numpy >= 1.3`` in your
 
 """
 
+# TODO: Better handling of the pkg -> file -> names mesh
+
 import os
 from pathlib import Path
 from typing import Iterable, Mapping, Optional, Union, Callable
