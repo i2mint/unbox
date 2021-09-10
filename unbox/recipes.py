@@ -8,18 +8,18 @@ from dol.filesys import RelPathFileStringReader
 from unbox import imports_for
 
 
-def signature_less_builtin_obj_names(caller="signature"):
+def signature_less_builtin_obj_names(caller='signature'):
     """Generator of builtin names that don't have a signature"""
     assert caller in {
-        "signature",
-        "help",
+        'signature',
+        'help',
     }  # caller='help' is to verify that all callable builtins have help
     from inspect import signature
     from unbox.base import builtin_obj_names
 
     for obj_name in builtin_obj_names:
         try:
-            exec(f"if callable({obj_name}): signature({obj_name})")
+            exec(f'if callable({obj_name}): signature({obj_name})')
         except ValueError as e:
             yield obj_name
         except NameError:
@@ -28,15 +28,16 @@ def signature_less_builtin_obj_names(caller="signature"):
 
 # TODO: Replace wasteful LocalTextStore base with file collection base and key->importlib.import_module(key) def of values
 @wrap_kvs(
-    key_of_id=lambda k: k.replace(".py", "").replace(os.path.sep, "."),
-    id_of_key=lambda k: k.replace(".", os.path.sep) + ".py",
+    key_of_id=lambda k: k.replace('.py', '').replace(os.path.sep, '.'),
+    id_of_key=lambda k: k.replace('.', os.path.sep) + '.py',
     postget=lambda k, v: importlib.import_module(k),
 )
-@filt_iter(filt=lambda k: k.endswith(".py"))
+@filt_iter(filt=lambda k: k.endswith('.py'))
 class ModuleStrings(RelPathFileStringReader):
     """Keys are module dotpaths and values are modules"""
 
 
+# Note: Skipping the doctest because _acquire_builtin_names is not found on some systems.
 def imports_of_package(
     package, module_dotpath_filt=None, imported_module_dotpath_filt=None, depth=None
 ):
@@ -53,7 +54,8 @@ def imports_of_package(
     ...                          unbox,
     ...                          module_dotpath_filt = lambda x: '__init__' not in x,
     ...                          depth=1):
-    ...     print(f"{module_dotpath}: {sorted(imported_module_dotpaths)[:3]}")
+    ...     print(f"{module_dotpath}: {sorted(imported_module_dotpaths)[:3]}"
+    ... )  # doctest: +SKIP
     _acquire_builtin_names: ['bs4', 'contextlib', 'dol.filesys']
     missing_install_names: ['collections', 'config2py', 'json']
     recipes: ['dol', 'dol.filesys', 'importlib']
@@ -97,8 +99,8 @@ def print_imports_of_package(
     for module_dotpath, imported_module_dotpaths in imports_of_package(
         package, module_dotpath_filt, imported_module_dotpath_filt, depth
     ):
-        t = "\n\t".join(imported_module_dotpaths)
-        print(f"{module_dotpath}:\n\t{t}")
+        t = '\n\t'.join(imported_module_dotpaths)
+        print(f'{module_dotpath}:\n\t{t}')
 
 
 #########################################################################################
@@ -120,7 +122,7 @@ def get_py_files(files: Files):
     if isinstance(files, str) and os.path.isdir(files):
         if files.endswith(path_sep):
             files = files[:-1]
-        files = LocalTextStore(files + path_sep + "{}.py")
+        files = LocalTextStore(files + path_sep + '{}.py')
     assert isinstance(files, Mapping)
     return files
 
@@ -153,9 +155,9 @@ def print_key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
     """Print (k, line) pairs for every line of every k that has a pattern match"""
     for k, lines in groupby(key_and_matched_lines(files, pattern), key=lambda x: x[0]):
         m = [x[1] for x in lines]
-        m = "\n\t".join(m)
+        m = '\n\t'.join(m)
         if m:
-            print(f"{k}:\n\t{m}")
+            print(f'{k}:\n\t{m}')
 
 
 def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
@@ -187,4 +189,4 @@ def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
 def print_py_files_containing_pattern(files: Files, pattern: Union[str, re.Pattern]):
     for key, pattern_count in key_and_pattern_counts(files, pattern):
         if pattern_count > 0:
-            print(f"{key}: {pattern_count}")
+            print(f'{key}: {pattern_count}')

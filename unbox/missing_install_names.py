@@ -206,7 +206,7 @@ def dependency_diff_for_pkg(
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
 ):
-    r'''
+    r"""
     Get the imported names that are not declared to be installed those names declared 
     to be installed that are not actually imported. 
 
@@ -236,7 +236,7 @@ def dependency_diff_for_pkg(
     ``unbox`` because they're only needed in the internal module 
     ``_acquire_builtin_names`` that is for development purporses only.
 
-    '''
+    """
     missing_install_names, unused_install_names = dependency_diff(
         install_names=pkg,
         import_names=pkg,
@@ -249,10 +249,10 @@ def dependency_diff_for_pkg(
 
 
 def print_missing_names(
-        pkg,
+    pkg,
     import_to_install_name_map: Optional[dict] = None,
     strict=False,
-    install_names_finder: Callable[[ROOT], NAMES] = find_install_names
+    install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
 ):
     """
     See ``dependency_diff_for_pkg`` for more info.

@@ -15,7 +15,9 @@ from dol import Collection, KvReader, lazyprop, wrap_kvs
 ROOT = Union[str, ModuleType]
 NAMES = Iterable[str]
 IMPORT_NAMES = Union[ROOT, NAMES]  # names (of packages) that are imported
-INSTALL_NAMES = Union[ROOT, NAMES]  # names (of packages) used to install (pip install X)
+INSTALL_NAMES = Union[
+    ROOT, NAMES
+]  # names (of packages) used to install (pip install X)
 
 
 def is_importable(name):
@@ -122,6 +124,8 @@ def modname_to_modobj(self, modname):
     __module__=__name__,
 )
 class ModuleNamesImportedByModule(ModulesImportedByModule):
+    """Store of module names imported by some module."""
+
     @staticmethod
     def _key_to_val(k):
         return k.imports
@@ -346,7 +350,9 @@ imports_for.first_level_count.__doc__ = (
 imports_for.third_party = partial(
     imports_for,
     post=lambda module: set(
-        xx.split('.')[0] for xx in module if xx.split('.')[0] not in builtin_module_names
+        xx.split('.')[0]
+        for xx in module
+        if xx.split('.')[0] not in builtin_module_names
     ),
 )
 imports_for.third_party.__doc__ = (
