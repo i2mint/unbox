@@ -210,7 +210,6 @@ def dependency_diff_for_pkg(
     Get the imported names that are not declared to be installed those names declared 
     to be installed that are not actually imported. 
 
-    ''' '''
     :param pkg: An imported package or path to one.
     :param import_to_install_name_map: The mapping between import names and install 
     names. This is because import names are not always what you need/want to install.
@@ -229,7 +228,7 @@ def dependency_diff_for_pkg(
 
     >>> import unbox
     >>> missing =  dependency_diff_for_pkg(unbox)[0]
-    >>> print(*sorted(missing), sep='\\n')
+    >>> print(*sorted(missing), sep='\n')
     bs4
     requests
 

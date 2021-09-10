@@ -1,3 +1,5 @@
+"""Recipes using unbox"""
+
 import os
 import importlib
 from dol import wrap_kvs, filt_iter
