@@ -1,0 +1,299 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>unbox.recipes &#8212; unbox 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for unbox.recipes</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Recipes using unbox&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">importlib</span>
+<span class="kn">from</span> <span class="nn">dol</span> <span class="kn">import</span> <span class="n">wrap_kvs</span><span class="p">,</span> <span class="n">filt_iter</span>
+<span class="kn">from</span> <span class="nn">dol.filesys</span> <span class="kn">import</span> <span class="n">RelPathFileStringReader</span>
+
+<span class="kn">from</span> <span class="nn">unbox</span> <span class="kn">import</span> <span class="n">imports_for</span>
+
+
+<div class="viewcode-block" id="signature_less_builtin_obj_names"><a class="viewcode-back" href="../../module_docs/unbox/recipes.html#unbox.recipes.signature_less_builtin_obj_names">[docs]</a><span class="k">def</span> <span class="nf">signature_less_builtin_obj_names</span><span class="p">(</span><span class="n">caller</span><span class="o">=</span><span class="s1">&#39;signature&#39;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generator of builtin names that don&#39;t have a signature&quot;&quot;&quot;</span>
+    <span class="k">assert</span> <span class="n">caller</span> <span class="ow">in</span> <span class="p">{</span>
+        <span class="s1">&#39;signature&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;help&#39;</span><span class="p">,</span>
+    <span class="p">}</span>  <span class="c1"># caller=&#39;help&#39; is to verify that all callable builtins have help</span>
+    <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
+    <span class="kn">from</span> <span class="nn">unbox.base</span> <span class="kn">import</span> <span class="n">builtin_obj_names</span>
+
+    <span class="k">for</span> <span class="n">obj_name</span> <span class="ow">in</span> <span class="n">builtin_obj_names</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">exec</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;if callable(</span><span class="si">{</span><span class="n">obj_name</span><span class="si">}</span><span class="s1">): signature(</span><span class="si">{</span><span class="n">obj_name</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">yield</span> <span class="n">obj_name</span>
+        <span class="k">except</span> <span class="ne">NameError</span><span class="p">:</span>
+            <span class="k">pass</span>  <span class="c1"># obviously builtin_obj_names isn&#39;t perfect -- some names it has aren&#39;t found on your system!</span></div>
+
+
+<span class="c1"># TODO: Replace wasteful LocalTextStore base with file collection base and key-&gt;importlib.import_module(key) def of values</span>
+<div class="viewcode-block" id="ModuleStrings"><a class="viewcode-back" href="../../module_docs/unbox/recipes.html#unbox.recipes.ModuleStrings">[docs]</a><span class="nd">@wrap_kvs</span><span class="p">(</span>
+    <span class="n">key_of_id</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.py&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">,</span> <span class="s1">&#39;.&#39;</span><span class="p">),</span>
+    <span class="n">id_of_key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.py&#39;</span><span class="p">,</span>
+    <span class="n">postget</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">:</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">k</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="nd">@filt_iter</span><span class="p">(</span><span class="n">filt</span><span class="o">=</span><span class="k">lambda</span> <span class="n">k</span><span class="p">:</span> <span class="n">k</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.py&#39;</span><span class="p">))</span>
+<span class="k">class</span> <span class="nc">ModuleStrings</span><span class="p">(</span><span class="n">RelPathFileStringReader</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Keys are module dotpaths and values are modules&quot;&quot;&quot;</span></div>
+
+
+<span class="c1"># Note: Skipping the doctest because _acquire_builtin_names is not found on some systems.</span>
+<div class="viewcode-block" id="imports_of_package"><a class="viewcode-back" href="../../module_docs/unbox/recipes.html#unbox.recipes.imports_of_package">[docs]</a><span class="k">def</span> <span class="nf">imports_of_package</span><span class="p">(</span>
+    <span class="n">package</span><span class="p">,</span> <span class="n">module_dotpath_filt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">imported_module_dotpath_filt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Generates (module_dotpath, imported_module_dotpaths) pairs from a package, recursively.</span>
+
+<span class="sd">    :param package: Module, file, folder, or dotpath of package to root the generation from</span>
+<span class="sd">    :param module_dotpath_filt: Filter function for module dotpaths</span>
+<span class="sd">    :param imported_module_dotpath_filt: Filter function for imported module dotpaths</span>
+<span class="sd">    :param depth: How deep the recursion should be</span>
+<span class="sd">    :return: A generator of (module_dotpath, imported_module_dotpaths) pairs</span>
+
+<span class="sd">    &gt;&gt;&gt; import unbox</span>
+<span class="sd">    &gt;&gt;&gt; for module_dotpath, imported_module_dotpaths in imports_of_package(</span>
+<span class="sd">    ...                          unbox,</span>
+<span class="sd">    ...                          module_dotpath_filt = lambda x: &#39;__init__&#39; not in x,</span>
+<span class="sd">    ...                          depth=1):</span>
+<span class="sd">    ...     print(f&quot;{module_dotpath}: {sorted(imported_module_dotpaths)[:3]}&quot;</span>
+<span class="sd">    ... )  # doctest: +SKIP</span>
+<span class="sd">    _acquire_builtin_names: [&#39;bs4&#39;, &#39;contextlib&#39;, &#39;dol.filesys&#39;]</span>
+<span class="sd">    missing_install_names: [&#39;collections&#39;, &#39;config2py&#39;, &#39;json&#39;]</span>
+<span class="sd">    recipes: [&#39;dol&#39;, &#39;dol.filesys&#39;, &#39;importlib&#39;]</span>
+<span class="sd">    base: [&#39;builtins&#39;, &#39;collections&#39;, &#39;contextlib&#39;]</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">package</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">package</span><span class="p">):</span>
+            <span class="n">rootdir</span> <span class="o">=</span> <span class="n">package</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">package</span> <span class="o">=</span> <span class="n">importlib</span><span class="o">.</span><span class="n">import_module</span><span class="p">(</span><span class="n">package</span><span class="p">)</span>
+            <span class="n">rootdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">package</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">package</span><span class="p">,</span> <span class="n">ModuleType</span><span class="p">):</span>
+        <span class="n">rootdir</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">package</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Couldn&#39;t resolve </span><span class="si">{</span><span class="n">package</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">s</span> <span class="o">=</span> <span class="n">ModuleStrings</span><span class="p">(</span><span class="n">rootdir</span><span class="p">,</span> <span class="n">max_levels</span><span class="o">=</span><span class="n">depth</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">module_dotpath</span><span class="p">,</span> <span class="n">imported_module_dotpaths</span> <span class="ow">in</span> <span class="n">s</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">module_dotpath_filt</span> <span class="ow">or</span> <span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="kc">True</span><span class="p">))(</span><span class="n">module_dotpath</span><span class="p">):</span>
+            <span class="n">imported_module_dotpaths</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span>
+                <span class="nb">filter</span><span class="p">(</span>
+                    <span class="n">imported_module_dotpath_filt</span><span class="p">,</span>
+                    <span class="nb">set</span><span class="p">(</span><span class="n">imports_for</span><span class="p">(</span><span class="n">imported_module_dotpaths</span><span class="p">)),</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">yield</span> <span class="n">module_dotpath</span><span class="p">,</span> <span class="n">imported_module_dotpaths</span></div>
+
+
+<div class="viewcode-block" id="print_imports_of_package"><a class="viewcode-back" href="../../module_docs/unbox/recipes.html#unbox.recipes.print_imports_of_package">[docs]</a><span class="k">def</span> <span class="nf">print_imports_of_package</span><span class="p">(</span>
+    <span class="n">package</span><span class="p">,</span> <span class="n">module_dotpath_filt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">imported_module_dotpath_filt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="kc">None</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Prints (module_dotpath, imported_module_dotpaths) pairs from a package, recursively.</span>
+
+<span class="sd">    :param package: Module, file, folder, or dotpath of package to root the generation from</span>
+<span class="sd">    :param module_dotpath_filt: Filter function for module dotpaths</span>
+<span class="sd">    :param imported_module_dotpath_filt: Filter function for imported module dotpaths</span>
+<span class="sd">    :param depth: How deep the recursion should be</span>
+<span class="sd">    :return: prints the (module_dotpath, imported_module_dotpaths) pairs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">module_dotpath</span><span class="p">,</span> <span class="n">imported_module_dotpaths</span> <span class="ow">in</span> <span class="n">imports_of_package</span><span class="p">(</span>
+        <span class="n">package</span><span class="p">,</span> <span class="n">module_dotpath_filt</span><span class="p">,</span> <span class="n">imported_module_dotpath_filt</span><span class="p">,</span> <span class="n">depth</span>
+    <span class="p">):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">imported_module_dotpaths</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">module_dotpath</span><span class="si">}</span><span class="s1">:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">t</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<span class="c1">#########################################################################################</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">ModuleType</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">groupby</span>
+
+<span class="kn">from</span> <span class="nn">py2store</span> <span class="kn">import</span> <span class="n">LocalTextStore</span>  <span class="c1"># TODO: Replace with dol one</span>
+
+<span class="n">Files</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">ModuleType</span><span class="p">]</span>
+<span class="n">path_sep</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">sep</span>
+
+
+<span class="k">def</span> <span class="nf">get_py_files</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">Files</span><span class="p">):</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">ModuleType</span><span class="p">):</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">files</span><span class="o">.</span><span class="vm">__file__</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">files</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">files</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">path_sep</span><span class="p">):</span>
+            <span class="n">files</span> <span class="o">=</span> <span class="n">files</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">files</span> <span class="o">=</span> <span class="n">LocalTextStore</span><span class="p">(</span><span class="n">files</span> <span class="o">+</span> <span class="n">path_sep</span> <span class="o">+</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.py&#39;</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">files</span>
+
+
+<span class="k">def</span> <span class="nf">_preproces_files_and_pattern</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">Files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;helper&quot;&quot;&quot;</span>
+    <span class="n">files</span> <span class="o">=</span> <span class="n">get_py_files</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">pattern</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">files</span><span class="p">,</span> <span class="n">pattern</span>
+
+
+<div class="viewcode-block" id="key_and_matched_lines"><a class="viewcode-back" href="../../module_docs/unbox/recipes.html#unbox.recipes.key_and_matched_lines">[docs]</a><span class="k">def</span> <span class="nf">key_and_matched_lines</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">Files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Generates (k, line) pairs for every line of every k that has a pattern match</span>
+
+<span class="sd">    :param files: A source of py files (e.g. module, root directory, or a Mapping itself)</span>
+<span class="sd">    :param pattern: A string or re.Pattern to match and count</span>
+<span class="sd">    :return: A generator of (k, pattern_counts) pairs</span>
+
+<span class="sd">    See also: key_and_pattern_counts</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">files</span><span class="p">,</span> <span class="n">pattern</span> <span class="o">=</span> <span class="n">_preproces_files_and_pattern</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">contents</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">contents</span><span class="o">.</span><span class="n">splitlines</span><span class="p">(</span><span class="n">keepends</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">pattern</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
+                <span class="k">yield</span> <span class="n">k</span><span class="p">,</span> <span class="n">line</span></div>
+
+
+<div class="viewcode-block" id="print_key_and_matched_lines"><a class="viewcode-back" href="../../module_docs/unbox/recipes.html#unbox.recipes.print_key_and_matched_lines">[docs]</a><span class="k">def</span> <span class="nf">print_key_and_matched_lines</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">Files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Print (k, line) pairs for every line of every k that has a pattern match&quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">lines</span> <span class="ow">in</span> <span class="n">groupby</span><span class="p">(</span><span class="n">key_and_matched_lines</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">]</span>
+        <span class="n">m</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="se">\n\t</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">m</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">k</span><span class="si">}</span><span class="s1">:</span><span class="se">\n\t</span><span class="si">{</span><span class="n">m</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="key_and_pattern_counts"><a class="viewcode-back" href="../../module_docs/unbox/recipes.html#unbox.recipes.key_and_pattern_counts">[docs]</a><span class="k">def</span> <span class="nf">key_and_pattern_counts</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">Files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]):</span>
+    <span class="sd">&quot;&quot;&quot;Generates (k, pattern_counts) pairs from scanning a store of .py files it scans, counting pattern matches</span>
+
+<span class="sd">    :param files: A source of py files (e.g. module, root directory, or a Mapping itself)</span>
+<span class="sd">    :param pattern: A string or re.Pattern to match and count</span>
+<span class="sd">    :return: A generator of (k, pattern_counts) pairs</span>
+
+<span class="sd">    In order to be able to replicate this test we&#39;ll mention a word that has little chance of showing up in an</span>
+<span class="sd">    uncontrolled matter in this this unbox package. This word: supercalifragilisticexpialidocious</span>
+<span class="sd">    It should appear only twice in this current recipes.py -- once above, and once when we ask for</span>
+<span class="sd">    key_and_pattern_counts to match it.</span>
+
+<span class="sd">    Now, let&#39;s see:</span>
+
+<span class="sd">    &gt;&gt;&gt; import unbox</span>
+<span class="sd">    &gt;&gt;&gt; sorted(key_and_pattern_counts(unbox, &#39;supercalifragilisticexpialidocious&#39;))</span>
+<span class="sd">    [(&#39;__init__.py&#39;, 0), (&#39;_acquire_builtin_names.py&#39;, 0), (&#39;base.py&#39;, 0), (&#39;missing_install_names.py&#39;, 0), (&#39;recipes.py&#39;, 2)]</span>
+
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">files</span><span class="p">,</span> <span class="n">pattern</span> <span class="o">=</span> <span class="n">_preproces_files_and_pattern</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">contents</span> <span class="ow">in</span> <span class="n">files</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">pattern_count</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pattern</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">contents</span><span class="p">))</span>
+        <span class="k">yield</span> <span class="n">k</span><span class="p">,</span> <span class="n">pattern_count</span></div>
+
+
+<span class="k">def</span> <span class="nf">print_py_files_containing_pattern</span><span class="p">(</span><span class="n">files</span><span class="p">:</span> <span class="n">Files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">Pattern</span><span class="p">]):</span>
+    <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">pattern_count</span> <span class="ow">in</span> <span class="n">key_and_pattern_counts</span><span class="p">(</span><span class="n">files</span><span class="p">,</span> <span class="n">pattern</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">pattern_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s1">: </span><span class="si">{</span><span class="n">pattern_count</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">unbox</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox.html">unbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/_acquire_builtin_names.html">unbox._acquire_builtin_names</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/base.html">unbox.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/missing_install_names.html">unbox.missing_install_names</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../module_docs/unbox/recipes.html">unbox.recipes</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;NO COPYRIGHT.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

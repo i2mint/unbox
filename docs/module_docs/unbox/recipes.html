@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>unbox.recipes &#8212; unbox 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="prev" title="unbox.missing_install_names" href="missing_install_names.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-unbox.recipes">
+<span id="unbox-recipes"></span><h1>unbox.recipes<a class="headerlink" href="#module-unbox.recipes" title="Permalink to this headline">¶</a></h1>
+<p>Recipes using unbox</p>
+<dl class="py class">
+<dt id="unbox.recipes.ModuleStrings">
+<em class="property">class </em><code class="sig-prename descclassname">unbox.recipes.</code><code class="sig-name descname">ModuleStrings</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/recipes.html#ModuleStrings"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.recipes.ModuleStrings" title="Permalink to this definition">¶</a></dt>
+<dd><p>Keys are module dotpaths and values are modules</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.recipes.imports_of_package">
+<code class="sig-prename descclassname">unbox.recipes.</code><code class="sig-name descname">imports_of_package</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">package</span></em>, <em class="sig-param"><span class="n">module_dotpath_filt</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">imported_module_dotpath_filt</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/recipes.html#imports_of_package"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.recipes.imports_of_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates (module_dotpath, imported_module_dotpaths) pairs from a package, recursively.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>package</strong> – Module, file, folder, or dotpath of package to root the generation from</p></li>
+<li><p><strong>module_dotpath_filt</strong> – Filter function for module dotpaths</p></li>
+<li><p><strong>imported_module_dotpath_filt</strong> – Filter function for imported module dotpaths</p></li>
+<li><p><strong>depth</strong> – How deep the recursion should be</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A generator of (module_dotpath, imported_module_dotpaths) pairs</p>
+</dd>
+</dl>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unbox</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">for</span> <span class="n">module_dotpath</span><span class="p">,</span> <span class="n">imported_module_dotpaths</span> <span class="ow">in</span> <span class="n">imports_of_package</span><span class="p">(</span>
+<span class="gp">... </span>                         <span class="n">unbox</span><span class="p">,</span>
+<span class="gp">... </span>                         <span class="n">module_dotpath_filt</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="s1">&#39;__init__&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">x</span><span class="p">,</span>
+<span class="gp">... </span>                         <span class="n">depth</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<span class="gp">... </span>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">module_dotpath</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">sorted</span><span class="p">(</span><span class="n">imported_module_dotpaths</span><span class="p">)[:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="gp">... </span><span class="p">)</span>  
+<span class="go">_acquire_builtin_names: [&#39;bs4&#39;, &#39;contextlib&#39;, &#39;dol.filesys&#39;]</span>
+<span class="go">missing_install_names: [&#39;collections&#39;, &#39;config2py&#39;, &#39;json&#39;]</span>
+<span class="go">recipes: [&#39;dol&#39;, &#39;dol.filesys&#39;, &#39;importlib&#39;]</span>
+<span class="go">base: [&#39;builtins&#39;, &#39;collections&#39;, &#39;contextlib&#39;]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.recipes.key_and_matched_lines">
+<code class="sig-prename descclassname">unbox.recipes.</code><code class="sig-name descname">key_and_matched_lines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>Mapping<span class="p">, </span>module<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">pattern</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>re.Pattern<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/recipes.html#key_and_matched_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.recipes.key_and_matched_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates (k, line) pairs for every line of every k that has a pattern match</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> – A source of py files (e.g. module, root directory, or a Mapping itself)</p></li>
+<li><p><strong>pattern</strong> – A string or re.Pattern to match and count</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A generator of (k, pattern_counts) pairs</p>
+</dd>
+</dl>
+<p>See also: key_and_pattern_counts</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.recipes.key_and_pattern_counts">
+<code class="sig-prename descclassname">unbox.recipes.</code><code class="sig-name descname">key_and_pattern_counts</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>Mapping<span class="p">, </span>module<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">pattern</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>re.Pattern<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/recipes.html#key_and_pattern_counts"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.recipes.key_and_pattern_counts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generates (k, pattern_counts) pairs from scanning a store of .py files it scans, counting pattern matches</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>files</strong> – A source of py files (e.g. module, root directory, or a Mapping itself)</p></li>
+<li><p><strong>pattern</strong> – A string or re.Pattern to match and count</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A generator of (k, pattern_counts) pairs</p>
+</dd>
+</dl>
+<p>In order to be able to replicate this test we’ll mention a word that has little chance of showing up in an
+uncontrolled matter in this this unbox package. This word: supercalifragilisticexpialidocious
+It should appear only twice in this current recipes.py – once above, and once when we ask for
+key_and_pattern_counts to match it.</p>
+<p>Now, let’s see:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unbox</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">sorted</span><span class="p">(</span><span class="n">key_and_pattern_counts</span><span class="p">(</span><span class="n">unbox</span><span class="p">,</span> <span class="s1">&#39;supercalifragilisticexpialidocious&#39;</span><span class="p">))</span>
+<span class="go">[(&#39;__init__.py&#39;, 0), (&#39;_acquire_builtin_names.py&#39;, 0), (&#39;base.py&#39;, 0), (&#39;missing_install_names.py&#39;, 0), (&#39;recipes.py&#39;, 2)]</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.recipes.print_imports_of_package">
+<code class="sig-prename descclassname">unbox.recipes.</code><code class="sig-name descname">print_imports_of_package</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">package</span></em>, <em class="sig-param"><span class="n">module_dotpath_filt</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">imported_module_dotpath_filt</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">depth</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/recipes.html#print_imports_of_package"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.recipes.print_imports_of_package" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prints (module_dotpath, imported_module_dotpaths) pairs from a package, recursively.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>package</strong> – Module, file, folder, or dotpath of package to root the generation from</p></li>
+<li><p><strong>module_dotpath_filt</strong> – Filter function for module dotpaths</p></li>
+<li><p><strong>imported_module_dotpath_filt</strong> – Filter function for imported module dotpaths</p></li>
+<li><p><strong>depth</strong> – How deep the recursion should be</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>prints the (module_dotpath, imported_module_dotpaths) pairs</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.recipes.print_key_and_matched_lines">
+<code class="sig-prename descclassname">unbox.recipes.</code><code class="sig-name descname">print_key_and_matched_lines</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">files</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>Mapping<span class="p">, </span>module<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">pattern</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>re.Pattern<span class="p">]</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/recipes.html#print_key_and_matched_lines"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.recipes.print_key_and_matched_lines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Print (k, line) pairs for every line of every k that has a pattern match</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.recipes.signature_less_builtin_obj_names">
+<code class="sig-prename descclassname">unbox.recipes.</code><code class="sig-name descname">signature_less_builtin_obj_names</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">caller</span><span class="o">=</span><span class="default_value">'signature'</span></em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/recipes.html#signature_less_builtin_obj_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.recipes.signature_less_builtin_obj_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generator of builtin names that don’t have a signature</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">unbox</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../unbox.html">unbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_acquire_builtin_names.html">unbox._acquire_builtin_names</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">unbox.base</a></li>
+<li class="toctree-l1"><a class="reference internal" href="missing_install_names.html">unbox.missing_install_names</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">unbox.recipes</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="missing_install_names.html" title="previous chapter">unbox.missing_install_names</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;NO COPYRIGHT.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/module_docs/unbox/recipes.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

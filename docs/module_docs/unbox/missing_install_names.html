@@ -1,0 +1,236 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>unbox.missing_install_names &#8212; unbox 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/graphviz.css" />
+    <script id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="unbox.recipes" href="recipes.html" />
+    <link rel="prev" title="unbox.base" href="base.html" />
+   
+  <link rel="stylesheet" href="../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-unbox.missing_install_names">
+<span id="unbox-missing-install-names"></span><h1>unbox.missing_install_names<a class="headerlink" href="#module-unbox.missing_install_names" title="Permalink to this headline">¶</a></h1>
+<p>Finding missing install names</p>
+<p>For doing things like:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">unbox</span> <span class="kn">import</span> <span class="n">print_missing_names</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unbox</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">print_missing_names</span><span class="p">(</span><span class="n">unbox</span><span class="p">)</span>
+<span class="go">bs4</span>
+<span class="go">requests</span>
+</pre></div>
+</div>
+<p>Note: These missing dependencies are real, unpurpose, but don’t affect you.</p>
+<p>You can get the set of missing install names as well as the set of install names
+that are not used.</p>
+<p>What does this mean?</p>
+<p>Install names are those you have declared you needed to install the packages (like
+what you put in the <a href="#id1"><span class="problematic" id="id2">``</span></a>`` section of your <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> if that’s what you use.</p>
+<p>Why are the missing or unused? It has to do with imports. If you declared you needed a
+package to be installed (a dependency) but never import it, it’s unused.
+More importantly, if you use (that is import) a package, but haven’t listed it in the
+names to be installed, that’s a problem for your users.</p>
+<p>There’s several problems to solve here (and you have function here to solve them).</p>
+<p>One problem: finding the names that are imported. That’s solved by <code class="docutils literal notranslate"><span class="pre">import_for</span></code> and
+the many subfunctions like <code class="docutils literal notranslate"><span class="pre">import_for.third_party</span></code>.</p>
+<p>Another problem is that the names that are imported are not necessarily the names that
+should be installed.
+For example, you <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">sklearn</span></code> but you <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">scikit-learn</span></code>.
+That’s annoying. So we need a mapping between import names and install names.</p>
+<p>So we provide a default mapping (which we will expand as users notify us, or we
+encounter more of those aggravating cases.</p>
+<p>That said, we provide ways for users to specify their own map.</p>
+<p>You can specify an explicit mapping from import name to install name in the form of a
+dict or any other valid <code class="docutils literal notranslate"><span class="pre">Mapping</span></code> instance. You can also add a
+<code class="docutils literal notranslate"><span class="pre">IMPORT_TO_INSTALL_NAME_MAP_FILE</span></code> environmental variable pointing to a JSON file path
+that will be used if this explicit mapping is not given.
+If you do none of those, the system will use the default mapping, which is expressed by
+the <code class="docutils literal notranslate"><span class="pre">unbox/data/dflt_import_to_install_name_map.json</span></code> file in the packaged data.</p>
+<p>Besides the import vs install name discrepency, there are other reasons you may want
+to specify your own map.
+You may want to depend on a particular version of a third-party package,
+or ensure that the version is greater than a minimum version. So the import names
+you extracted need to be mapped to a fuller specification. For example, instead
+of just requiring <code class="docutils literal notranslate"><span class="pre">numpy</span></code> you may want to have <code class="docutils literal notranslate"><span class="pre">numpy</span> <span class="pre">&gt;=</span> <span class="pre">1.3</span></code> in your
+<code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> or <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code>.</p>
+<dl class="py function">
+<dt id="unbox.missing_install_names.dependency_diff_for_pkg">
+<code class="sig-prename descclassname">unbox.missing_install_names.</code><code class="sig-name descname">dependency_diff_for_pkg</code><span class="sig-paren">(</span><em class="sig-param">pkg, import_to_install_name_map: Optional[dict] = None, strict=False, install_names_finder: Callable[[Union[str, module]], Iterable[str]] = &lt;function find_install_names&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/missing_install_names.html#dependency_diff_for_pkg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.missing_install_names.dependency_diff_for_pkg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the imported names that are not declared to be installed those names declared
+to be installed that are not actually imported.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>pkg</strong> – An imported package or path to one.</p></li>
+<li><p><strong>import_to_install_name_map</strong> – The mapping between import names and install</p></li>
+</ul>
+</dd>
+</dl>
+<p>names. This is because import names are not always what you need/want to install.</p>
+<p>Options (you won’t have to deal with most of the time):</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>strict</strong> – Whether you want to allow only those names that are explicitly</p>
+</dd>
+</dl>
+<p>declared in <code class="docutils literal notranslate"><span class="pre">import_to_install_name_map</span></code> or not. (Default is False).
+:param install_names_finder: A function that takes the package and finds the
+declared install names (By default only looks in <code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code>, but you can make
+it look for <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code>, or where-ever.
+:return: The {import_names - install_names} and {install_names - import_names} sets.</p>
+<p>The typical use would be when you want to add missing dependencies in your
+install instructions. You would then do:</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unbox</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">missing</span> <span class="o">=</span>  <span class="n">dependency_diff_for_pkg</span><span class="p">(</span><span class="n">unbox</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="o">*</span><span class="nb">sorted</span><span class="p">(</span><span class="n">missing</span><span class="p">),</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">)</span>
+<span class="go">bs4</span>
+<span class="go">requests</span>
+</pre></div>
+</div>
+<p>Note: These packages were purposely omitted in the install instructions of
+<code class="docutils literal notranslate"><span class="pre">unbox</span></code> because they’re only needed in the internal module
+<code class="docutils literal notranslate"><span class="pre">_acquire_builtin_names</span></code> that is for development purporses only.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.missing_install_names.install_names_for_imports">
+<code class="sig-prename descclassname">unbox.missing_install_names.</code><code class="sig-name descname">install_names_for_imports</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">import_names</span><span class="p">:</span> <span class="n">Union<span class="p">[</span>str<span class="p">, </span>module<span class="p">, </span>Iterable<span class="p">[</span>str<span class="p">]</span><span class="p">]</span></span></em>, <em class="sig-param"><span class="n">import_to_install_name_map</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>dict<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">strict</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span> &#x2192; set<a class="reference internal" href="../../_modules/unbox/missing_install_names.html#install_names_for_imports"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.missing_install_names.install_names_for_imports" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get a set of install names, i.e. names that are used in <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">PKG_NAME</span></code>.</p>
+<p>There are a few use cases for this.</p>
+<p>First, the install names can be different from the names that are used to import
+a package. For example, you <code class="docutils literal notranslate"><span class="pre">import</span> <span class="pre">sklearn</span></code> but you <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">scikit-learn</span></code>.</p>
+<p>Secondly, you may want to depend on a particular version of a third-party package,
+or ensure that the version is greater than a minimum version. So the import names
+you extracted need to be mapped to a fuller specification. For example, instead
+of just requiring <code class="docutils literal notranslate"><span class="pre">numpy</span></code> you may want to have <code class="docutils literal notranslate"><span class="pre">numpy</span> <span class="pre">&gt;=</span> <span class="pre">1.3</span></code> in your
+<code class="docutils literal notranslate"><span class="pre">setup.cfg</span></code> or <code class="docutils literal notranslate"><span class="pre">requirements.txt</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>import_names</strong> – An iterable of import names, or a module, package,
+or filepath/folderpath thereof, to be able to extract them</p></li>
+<li><p><strong>import_to_install_name_map</strong> – A dict mapping import names (keys) to install
+names</p></li>
+<li><p><strong>strict</strong> – Whether to assert that all import_names are in the map</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="unbox.missing_install_names.print_missing_names">
+<code class="sig-prename descclassname">unbox.missing_install_names.</code><code class="sig-name descname">print_missing_names</code><span class="sig-paren">(</span><em class="sig-param">pkg, import_to_install_name_map: Optional[dict] = None, strict=False, install_names_finder: Callable[[Union[str, module]], Iterable[str]] = &lt;function find_install_names&gt;</em><span class="sig-paren">)</span><a class="reference internal" href="../../_modules/unbox/missing_install_names.html#print_missing_names"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#unbox.missing_install_names.print_missing_names" title="Permalink to this definition">¶</a></dt>
+<dd><p>See <code class="docutils literal notranslate"><span class="pre">dependency_diff_for_pkg</span></code> for more info.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">unbox</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">print_missing_names</span><span class="p">(</span><span class="n">unbox</span><span class="p">)</span>
+<span class="go">bs4</span>
+<span class="go">requests</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../index.html">unbox</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../unbox.html">unbox</a></li>
+<li class="toctree-l1"><a class="reference internal" href="_acquire_builtin_names.html">unbox._acquire_builtin_names</a></li>
+<li class="toctree-l1"><a class="reference internal" href="base.html">unbox.base</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">unbox.missing_install_names</a></li>
+<li class="toctree-l1"><a class="reference internal" href="recipes.html">unbox.recipes</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="base.html" title="previous chapter">unbox.base</a></li>
+      <li>Next: <a href="recipes.html" title="next chapter">unbox.recipes</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;NO COPYRIGHT.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.3.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../../_sources/module_docs/unbox/missing_install_names.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
