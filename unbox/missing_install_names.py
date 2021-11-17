@@ -62,9 +62,11 @@ import os
 from pathlib import Path
 from typing import Iterable, Mapping, Optional, Union, Callable
 import json
+from pathlib import PosixPath
 
 from unbox.base import files, data_files
 from unbox import IMPORT_NAMES, imports_for, NAMES, INSTALL_NAMES, ROOT
+from config2py import ConfigStore
 
 name_map_envvar = 'IMPORT_TO_INSTALL_NAME_MAP_FILE'
 
@@ -270,3 +272,22 @@ def print_missing_names(
         install_names_finder=install_names_finder,
     )
     print(*sorted(missing_install_names), sep='\n')
+
+
+def module_to_setup_cfg_filepath(module, assert_level='strong'):
+    """Get the path of the setup.cfg file for the module"""
+    dirpath = PosixPath(module.__file__).parent.parent
+    setup_file = dirpath / 'setup.cfg'
+    if assert_level == 'strong':
+        assert setup_file.exists(), f"{setup_file} wasn't found"
+        p = dirpath / 'README.md'
+        assert p.exists(), f"{p} wasn't found"
+        p = dirpath / dirpath.name
+        assert p.exists(), f"{p} wasn't found"
+    return str(setup_file)
+
+
+def install_requires_of_module(module):
+    """Get the list of required packages for the module, taken from setup.cfg file"""
+    s = ConfigStore(module_to_setup_cfg_filepath(module))
+    return list(filter(None, s['options']['install_requires'].split('\n')))
