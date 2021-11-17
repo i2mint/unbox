@@ -7,6 +7,20 @@ To install:	```pip install unbox```
 
 Lots of little goodies to help you analyze the imports of your, or others' code. 
 
+## Getting a list of missing dependencies
+
+```python
+>>> from unbox import print_missing_names
+>>> import some_module  # doctest: +SKIP
+>>> print_missing_names(some_module)  # doctest: +SKIP
+SoundFile
+i2
+librosa
+pyttsx3
+slink
+```
+
+
 ## A dict-like interface
 
 The base of `unbox` is just the `dol` interface to `findimports`, which then allows us to 
