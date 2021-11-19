@@ -293,6 +293,7 @@ def get_module_obj(module) -> ModuleType:
         module = __import__(module)
     if not isinstance(module, ModuleType):
         import inspect
+
         module = inspect.getmodule(module)
     return module
 
