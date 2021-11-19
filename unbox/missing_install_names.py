@@ -293,5 +293,6 @@ def module_requirements_according_to_setupcfg(module):
     return list(filter(None, s['options']['install_requires'].split('\n')))
 
 
-install_requires_of_module = module_requirements_according_to_setupcfg  # backcompa alias
-
+install_requires_of_module = (
+    module_requirements_according_to_setupcfg  # backcompa alias
+)
