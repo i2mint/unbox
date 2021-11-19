@@ -63,6 +63,7 @@ from pathlib import Path
 from typing import Iterable, Mapping, Optional, Union, Callable
 import json
 from pathlib import PosixPath
+from types import ModuleType
 
 from unbox.base import files, data_files
 from unbox import IMPORT_NAMES, imports_for, NAMES, INSTALL_NAMES, ROOT
@@ -287,8 +288,18 @@ def module_to_setup_cfg_filepath(module, assert_level='strong'):
     return str(setup_file)
 
 
+def get_module_obj(module) -> ModuleType:
+    if isinstance(module, str):
+        module = __import__(module)
+    if not isinstance(module, ModuleType):
+        import inspect
+        module = inspect.getmodule(module)
+    return module
+
+
 def module_requirements_according_to_setupcfg(module):
     """Get the list of required packages for the module, taken from setup.cfg file"""
+    module = get_module_obj(module)
     s = ConfigStore(module_to_setup_cfg_filepath(module))
     return list(filter(None, s['options']['install_requires'].split('\n')))
 
