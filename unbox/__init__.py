@@ -5,5 +5,6 @@ from unbox.missing_install_names import (
     dependency_diff_for_pkg,
     print_missing_names,
     module_to_setup_cfg_filepath,
-    install_requires_of_module,
+    module_requirements_according_to_setupcfg,
+    install_requires_of_module,  # deprecate!
 )

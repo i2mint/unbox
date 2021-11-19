@@ -287,7 +287,11 @@ def module_to_setup_cfg_filepath(module, assert_level='strong'):
     return str(setup_file)
 
 
-def install_requires_of_module(module):
+def module_requirements_according_to_setupcfg(module):
     """Get the list of required packages for the module, taken from setup.cfg file"""
     s = ConfigStore(module_to_setup_cfg_filepath(module))
     return list(filter(None, s['options']['install_requires'].split('\n')))
+
+
+install_requires_of_module = module_requirements_according_to_setupcfg  # backcompa alias
+
