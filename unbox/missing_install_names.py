@@ -148,8 +148,8 @@ def pkg_root_dir_name(pkg):
     return Path(pkg.__file__).parent.name
 
 
-def install_names_from_setup_cfg_file(pkg) -> Union[NAMES, None]:
-    cfg_path = str(Path(pkg.__file__).parent.parent.joinpath('setup.cfg'))
+def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, None]:
+    cfg_path = get_setupcfg_path(pkg)
 
     if os.path.isfile(cfg_path):
         from config2py import ConfigReader
@@ -166,6 +166,49 @@ def install_names_from_setup_cfg_file(pkg) -> Union[NAMES, None]:
         return [x.strip() for x in install_requires.split()]
 
     return None
+
+
+def get_setupcfg_path(x) -> str:
+    """Flexible search for the setupcfg path for an object x"""
+    if isinstance(x, ModuleType):
+        return str(PosixPath(x.__file__).parent.parent / 'setup.cfg')
+    elif isinstance(x, str):
+        path = PosixPath(x)
+        if path.is_dir():
+            if (path / 'setup.cfg').is_file():  # proj/setup.cfg
+                return str(path / 'setup.cfg')
+            elif (path.parent / 'setup.cfg').is_file():  # proj/proj
+                return str(path.parent / 'setup.cfg')
+        elif path.name.endswith('__init__.py'):
+            return str(path.parent.parent / 'setup.cfg')
+        else:
+            assert path.name.endswith('setup.cfg')
+            return str(path)
+
+
+def get_module_obj(module) -> ModuleType:
+    if isinstance(module, str):
+        module = __import__(module)
+    if not isinstance(module, ModuleType):
+        import inspect
+
+        module = inspect.getmodule(module)
+    return module
+
+
+# Simple version
+# def module_requirements_according_to_setupcfg(module):
+#     """Get the list of required packages for the module, taken from setup.cfg file"""
+#     module = get_module_obj(module)
+#     s = ConfigStore(module_to_setup_cfg_filepath(module))
+#     return list(filter(None, s['options']['install_requires'].split('\n')))
+
+
+install_requires_of_module = (
+    module_requirements_according_to_setupcfg  # backcompa alias
+)
+
+install_names_from_setup_cfg_file = install_requires_of_module  # backcompa alias
 
 
 def find_install_names(pkg) -> NAMES:
@@ -273,37 +316,3 @@ def print_missing_names(
         install_names_finder=install_names_finder,
     )
     print(*sorted(missing_install_names), sep='\n')
-
-
-def module_to_setup_cfg_filepath(module, assert_level='strong'):
-    """Get the path of the setup.cfg file for the module"""
-    dirpath = PosixPath(module.__file__).parent.parent
-    setup_file = dirpath / 'setup.cfg'
-    if assert_level == 'strong':
-        assert setup_file.exists(), f"{setup_file} wasn't found"
-        p = dirpath / 'README.md'
-        assert p.exists(), f"{p} wasn't found"
-        p = dirpath / dirpath.name
-        assert p.exists(), f"{p} wasn't found"
-    return str(setup_file)
-
-
-def get_module_obj(module) -> ModuleType:
-    if isinstance(module, str):
-        module = __import__(module)
-    if not isinstance(module, ModuleType):
-        import inspect
-        module = inspect.getmodule(module)
-    return module
-
-
-def module_requirements_according_to_setupcfg(module):
-    """Get the list of required packages for the module, taken from setup.cfg file"""
-    module = get_module_obj(module)
-    s = ConfigStore(module_to_setup_cfg_filepath(module))
-    return list(filter(None, s['options']['install_requires'].split('\n')))
-
-
-install_requires_of_module = (
-    module_requirements_according_to_setupcfg  # backcompa alias
-)
