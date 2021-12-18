@@ -168,9 +168,20 @@ def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, None]:
     return None
 
 
+class ProbablyPythonPathError(ValueError):
+    """To raise when a module requested is probably not on the python path"""
+
+
 def get_setupcfg_path(x) -> str:
     """Flexible search for the setupcfg path for an object x"""
     if isinstance(x, ModuleType):
+        if x.__file__ is None:
+            raise ProbablyPythonPathError(
+                f"Sorry, but this module type ({x}) didn't have a __file__: "
+                "This often happens when you're pointing to a namespace module or "
+                "builtin. If it's not a builtin, it's probably that you don't have the "
+                "package on your python path."
+            )
         return str(PosixPath(x.__file__).parent.parent / 'setup.cfg')
     elif isinstance(x, str):
         path = PosixPath(x)
