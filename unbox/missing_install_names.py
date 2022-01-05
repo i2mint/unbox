@@ -180,7 +180,7 @@ def get_setupcfg_path(x) -> str:
                 f"Sorry, but this module type ({x}) didn't have a __file__: "
                 "This often happens when you're pointing to a namespace module or "
                 "builtin. If it's not a builtin, it's probably that you don't have the "
-                "package on your python path."
+                'package on your python path.'
             )
         return str(PosixPath(x.__file__).parent.parent / 'setup.cfg')
     elif isinstance(x, str):
