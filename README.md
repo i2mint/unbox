@@ -24,28 +24,32 @@ slink
 
 Simply get a list of dependencies for a package from PyPI.
 
-    >>> dependencies_from_pypi('pandas')  # doctest: +SKIP
-    ['numpy', 'numpy', 'python-dateutil', 'pytz', 'tzdata']
+```python
+>>> import unbox
+>>> unbox.dependencies_from_pypi('pandas')
+['numpy', 'numpy', 'python-dateutil', 'pytz', 'tzdata']
+```
 
 But you have control over the requirements that are returned, 
 and how they are returned:
 
-    >>> it = unbox.dependencies_from_pypi(
-    ...     'pandas',
-    ...     requirement_filter=lambda x: True,  # don't filter any requirements
-    ...     requirement_trans=lambda x: x,  # as is
-    ...     egress = lambda x: x  # just get the iterator as is
-    ... )
-    >>> next(it)  # doctest: +SKIP
-    'numpy>=1.22.4; python_version < "3.11"'
-    >>> list(it)[-1]  # doctest: +SKIP
-    'zstandard>=0.17.0; extra == "all"'
+```python
+>>> it = unbox.dependencies_from_pypi(
+...     'pandas',
+...     requirement_filter=lambda x: True,  # don't filter any requirements
+...     requirement_trans=lambda x: x,  # as is
+...     egress = lambda x: x  # just get the iterator as is
+... )
+>>> next(it)
+'numpy>=1.22.4; python_version < "3.11"'
+>>> list(it)[-1]
+'zstandard>=0.17.0; extra == "all"'
+```
 
 
 ## A dict-like interface
 
-The base of `unbox` is just the `dol` interface to `findimports`, which then allows us to 
-offer a bunch of functionalities easily. 
+The base of `unbox` is just the `dol` interface to `findimports`, which then allows us to offer a bunch of functionalities easily. 
 
 Say you wanted to know what dol was made of. 
 The dol way of doing this is to make a `Mapping` (i.e. a key-value dict-like interface), 

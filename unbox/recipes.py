@@ -175,8 +175,9 @@ def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
     Now, let's see:
 
     >>> import unbox
-    >>> sorted(key_and_pattern_counts(unbox, 'supercalifragilisticexpialidocious'))
-    [('__init__.py', 0), ('_acquire_builtin_names.py', 0), ('base.py', 0), ('missing_install_names.py', 0), ('recipes.py', 2)]
+    >>> sorted(key_and_pattern_counts(unbox, 'supercalifragilisticexpialidocious'))  # doctest: +NORMALIZE_WHITESPACE
+    [('__init__.py', 0), ('_acquire_builtin_names.py', 0), ('base.py', 0), 
+    ('dependencies.py', 0), ('missing_install_names.py', 0), ('recipes.py', 2)]
 
 
     """

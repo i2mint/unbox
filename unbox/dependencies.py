@@ -51,7 +51,7 @@ def dependencies_from_pypi(
     But you have control over the requirements that are returned, 
     and how they are returned:
 
-    >>> it = unbox.dependencies_from_pypi(
+    >>> it = dependencies_from_pypi(
     ...     'pandas',
     ...     requirement_filter=lambda x: True,  # don't filter any requirements
     ...     requirement_trans=lambda x: x,  # as is
