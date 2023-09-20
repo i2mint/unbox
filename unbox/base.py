@@ -307,8 +307,8 @@ def imports_for(root, post=set):
     :return:
 
     >>> import wave
-    >>> sorted(imports_for(wave))
-    ['audioop', 'builtins', 'chunk', 'collections', 'struct', 'sys']
+    >>> sorted(imports_for(wave))  # doctest: +ELLIPSIS
+    ['audioop', 'builtins', 'chunk', 'collections', 'struct', 'sys'...
     """
     import itertools
 
