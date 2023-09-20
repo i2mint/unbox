@@ -22,3 +22,4 @@ from unbox.missing_install_names import (
     module_requirements_according_to_setupcfg,
     install_requires_of_module,  # deprecate!
 )
+from unbox.dependencies import dependencies_from_pypi
