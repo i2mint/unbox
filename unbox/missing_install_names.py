@@ -60,6 +60,7 @@ of just requiring ``numpy`` you may want to have ``numpy >= 1.3`` in your
 
 import os
 from pathlib import Path
+from collections import namedtuple
 from typing import Iterable, Mapping, Optional, Union, Callable
 import json
 from pathlib import PosixPath
@@ -193,7 +194,9 @@ def get_setupcfg_path(x) -> str:
         elif path.name.endswith('__init__.py'):
             return str(path.parent.parent / 'setup.cfg')
         else:
-            assert path.name.endswith('setup.cfg')
+            assert path.name.endswith(
+                'setup.cfg'
+            ), f"Can't find setup.cfg for {path.name=}"
             return str(path)
 
 
@@ -264,23 +267,23 @@ def dependency_diff_for_pkg(
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
 ):
     r"""
-    Get the imported names that are not declared to be installed those names declared 
-    to be installed that are not actually imported. 
+    Get the imported names that are not declared to be installed those names declared
+    to be installed that are not actually imported.
 
     :param pkg: An imported package or path to one.
-    :param import_to_install_name_map: The mapping between import names and install 
+    :param import_to_install_name_map: The mapping between import names and install
     names. This is because import names are not always what you need/want to install.
 
     Options (you won't have to deal with most of the time):
 
-    :param strict: Whether you want to allow only those names that are explicitly 
+    :param strict: Whether you want to allow only those names that are explicitly
     declared in ``import_to_install_name_map`` or not. (Default is False).
-    :param install_names_finder: A function that takes the package and finds the 
-    declared install names (By default only looks in ``setup.cfg``, but you can make 
+    :param install_names_finder: A function that takes the package and finds the
+    declared install names (By default only looks in ``setup.cfg``, but you can make
     it look for ``requirements.txt``, or where-ever.
     :return: The {import_names - install_names} and {install_names - import_names} sets.
 
-    The typical use would be when you want to add missing dependencies in your 
+    The typical use would be when you want to add missing dependencies in your
     install instructions. You would then do:
 
     >>> import unbox
@@ -289,11 +292,13 @@ def dependency_diff_for_pkg(
     bs4
     requests
 
-    Note: These packages were purposely omitted in the install instructions of 
-    ``unbox`` because they're only needed in the internal module 
+    Note: These packages were purposely omitted in the install instructions of
+    ``unbox`` because they're only needed in the internal module
     ``_acquire_builtin_names`` that is for development purporses only.
 
     """
+    if isinstance(pkg, str):
+        pkg = __import__(pkg)
     missing_install_names, unused_install_names = dependency_diff(
         install_names=pkg,
         import_names=pkg,
@@ -302,7 +307,9 @@ def dependency_diff_for_pkg(
         install_names_finder=install_names_finder,
     )
     missing_install_names = missing_install_names - {pkg_root_dir_name((pkg))}
-    return missing_install_names, unused_install_names
+
+    MissingInstallNames = namedtuple('MissingInstallNames', ['missing', 'unused'])
+    return MissingInstallNames(missing_install_names, unused_install_names)
 
 
 def print_missing_names(
