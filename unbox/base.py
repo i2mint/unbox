@@ -170,6 +170,8 @@ _your_python_version = '{}.{}'.format(*sys.version_info[:2])
 
 # ---------------------------------------------------------------------------------------
 
+DFLT_PYTHON_VERSION = '3.9'
+
 
 def documented_builtin_module_names():
     """
@@ -187,15 +189,18 @@ def documented_builtin_module_names():
     """
     try:
         s = RelPathFileStringReader(standard_lib_names_data_dir)
-        if _your_python_version not in python_versions:
-            warnings.warn(
-                f'Not a version that is validated by this code: {_your_python_version}. Yielding nothing'
-            )
         yield from s[_your_python_version + '.csv'].split('\n')
     except KeyError as e:
         warnings.warn(
-            f"It seems I can't access the python builtin names data, so I'll yield nothing. Error: {e}"
+            f"""
+    It seems I can't access the python builtin names data, or can't find any
+    documented list for your version ({_your_python_version})
+    so I'll use the list for the default version ({DFLT_PYTHON_VERSION}).
+    You can also try to scan locally for standard lib names with `scan_locally_for_standard_lib_names`,
+    and update the data in the package's data folder. 
+    """
         )
+        yield from s[DFLT_PYTHON_VERSION + '.csv'].split('\n')
 
 
 def scan_locally_for_standard_lib_names(include_underscored=True):
