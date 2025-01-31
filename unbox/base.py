@@ -147,7 +147,7 @@ ModuleImports = ModuleNamesImportedByModule  # backcompatibility alias
 import pkgutil
 import builtins
 import sys
-from dol.filesys import RelPathFileStringReader
+from dol import TextFiles
 
 python_versions = ('2.7', '3.5', '3.6', '3.7', '3.8', '3.9')
 
@@ -188,19 +188,45 @@ def documented_builtin_module_names():
     See also: scan_locally_for_standard_lib_names
     """
     try:
-        s = RelPathFileStringReader(standard_lib_names_data_dir)
+        s = TextFiles(standard_lib_names_data_dir)
         yield from s[_your_python_version + '.csv'].split('\n')
     except KeyError as e:
         warnings.warn(
             f"""
     It seems I can't access the python builtin names data, or can't find any
     documented list for your version ({_your_python_version})
-    so I'll use the list for the default version ({DFLT_PYTHON_VERSION}).
-    You can also try to scan locally for standard lib names with `scan_locally_for_standard_lib_names`,
-    and update the data in the package's data folder. 
+    so I'll try to scan your system for these names.
+    You can also try to use 
+    `_update_documented_builtin_module_names(expected_python_version)`
+    to update the data.
     """
         )
+        try:
+            yield from scan_locally_for_standard_lib_names()
+        except Exception as e:
+            warnings.warn(
+                f"""
+    An unexpected error ({e}) occured when scanning your system. 
+    I'll just use the list for the default version ({DFLT_PYTHON_VERSION}).
+    """
+            )
         yield from s[DFLT_PYTHON_VERSION + '.csv'].split('\n')
+
+
+def _update_documented_builtin_module_names(expected_python_version: str):
+    """
+    Update the documented builtin module names data.
+
+    Scan the python docs for the builtin module names and save them in the
+    package's data folder.
+    """
+    assert expected_python_version == _your_python_version, (
+        f"Expected python version ({expected_python_version}) "
+        f"doesn't match the current python version ({_your_python_version})"
+    )
+    local_standard_lib_names = sorted(set(scan_locally_for_standard_lib_names()))
+    s = TextFiles(standard_lib_names_data_dir)
+    s[_your_python_version + '.csv'] = '\n'.join(local_standard_lib_names)
 
 
 def scan_locally_for_standard_lib_names(include_underscored=True):
