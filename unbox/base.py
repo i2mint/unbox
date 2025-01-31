@@ -38,9 +38,14 @@ def resolve_rootpath(obj) -> str:
     if isinstance(root, str) and not os.path.exists(root):
         root = import_module(root)
     if isinstance(root, ModuleType):
-        root = root.__file__
-        if root.endswith('__init__.py'):
-            root = os.path.dirname(root)
+        root = next(iter(root.__path__), None)
+        if root is None:
+            root = root.__file__
+            if root is not None:
+                if root.endswith('__init__.py'):
+                    root = os.path.dirname(root)
+            else:
+                raise ValueError(f"Can't resolve rootpath from {obj}")
     assert isinstance(root, str) and os.path.exists(root)
     return root
 
