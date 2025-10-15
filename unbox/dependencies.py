@@ -38,7 +38,7 @@ def dependencies_from_pypi(
     package_name,
     *,
     requirement_filter=lambda x: 'extra == ' not in x,
-    requirement_trans=lambda x: re.match('[\w-]+', x).group(0),
+    requirement_trans=lambda x: re.match(r'[\w-]+', x).group(0),
     egress=list,
 ):
     """Simply get a list of dependencies for a package from PyPI.

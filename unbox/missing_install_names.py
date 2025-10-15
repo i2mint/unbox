@@ -62,7 +62,8 @@ of just requiring ``numpy`` you may want to have ``numpy >= 1.3`` in your
 import os
 from pathlib import Path
 from collections import namedtuple
-from typing import Iterable, Mapping, Optional, Union, Callable, Iterator
+from typing import Optional, Union
+from collections.abc import Iterable, Mapping, Callable, Iterator
 import json
 from pathlib import PosixPath
 from types import ModuleType
@@ -79,7 +80,7 @@ DFLT_NAME_MAP_FILE = str(data_files / 'dflt_import_to_install_name_map.json')
 
 import_to_install_name_map_file = os.getenv(name_map_envvar, DFLT_NAME_MAP_FILE)
 
-with open(import_to_install_name_map_file, 'r') as fp:
+with open(import_to_install_name_map_file) as fp:
     dflt_import_to_install_name_map = json.load(fp)
 
 
@@ -127,7 +128,7 @@ def map_if_found(mapping: Mapping, to_map: Iterable, strict=False):
 
 def install_names_for_imports(
     import_names: IMPORT_NAMES,
-    import_to_install_name_map: Optional[dict] = None,
+    import_to_install_name_map: dict | None = None,
     strict=False,
 ) -> set:
     """
@@ -232,7 +233,7 @@ Content = str
 
 
 def dependencies_from_setup_configs(
-    setup_configs: Union[FolderPath, Mapping[str, Content], Iterable[Content]],
+    setup_configs: FolderPath | Mapping[str, Content] | Iterable[Content],
 ) -> Iterator[str]:
     """Generate all dependencies from a mapping of setup.cfg files.
 
@@ -258,7 +259,7 @@ def dependencies_from_setup_configs(
         yield from dependencies_from_setup_configs_content(content)
 
 
-def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, Iterator[str], None]:
+def module_requirements_according_to_setupcfg(pkg) -> NAMES | Iterator[str] | None:
     """Get dependencies from setup.cfg file(s).
 
     Args:
@@ -286,7 +287,7 @@ def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, Iterator[str]
     cfg_path = get_setupcfg_path(pkg)
 
     if os.path.isfile(cfg_path):
-        with open(cfg_path, 'r') as fp:
+        with open(cfg_path) as fp:
             content = fp.read()
         return list(dependencies_from_setup_configs_content(content))
 
@@ -371,7 +372,7 @@ def get_install_names(
 def dependency_diff(
     install_names: INSTALL_NAMES,
     import_names: IMPORT_NAMES = None,
-    import_to_install_name_map: Optional[dict] = None,
+    import_to_install_name_map: dict | None = None,
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
 ):
@@ -386,7 +387,7 @@ def dependency_diff(
 
 def dependency_diff_for_pkg(
     pkg,
-    import_to_install_name_map: Optional[dict] = None,
+    import_to_install_name_map: dict | None = None,
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
 ):
@@ -430,7 +431,7 @@ def dependency_diff_for_pkg(
         strict=strict,
         install_names_finder=install_names_finder,
     )
-    missing_install_names = missing_install_names - {pkg_root_dir_name((pkg))}
+    missing_install_names = missing_install_names - {pkg_root_dir_name(pkg)}
 
     MissingInstallNames = namedtuple('MissingInstallNames', ['missing', 'unused'])
     return MissingInstallNames(missing_install_names, unused_install_names)
@@ -438,7 +439,7 @@ def dependency_diff_for_pkg(
 
 def print_missing_names(
     pkg,
-    import_to_install_name_map: Optional[dict] = None,
+    import_to_install_name_map: dict | None = None,
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
 ):

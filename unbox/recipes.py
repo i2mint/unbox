@@ -105,7 +105,8 @@ def print_imports_of_package(
 
 #########################################################################################
 import re
-from typing import Mapping, Union
+from typing import Union
+from collections.abc import Mapping
 from types import ModuleType
 from itertools import groupby
 
@@ -127,7 +128,7 @@ def get_py_files(files: Files):
     return files
 
 
-def _preproces_files_and_pattern(files: Files, pattern: Union[str, re.Pattern]):
+def _preproces_files_and_pattern(files: Files, pattern: str | re.Pattern):
     """helper"""
     files = get_py_files(files)
     if isinstance(pattern, str):
@@ -135,7 +136,7 @@ def _preproces_files_and_pattern(files: Files, pattern: Union[str, re.Pattern]):
     return files, pattern
 
 
-def key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
+def key_and_matched_lines(files: Files, pattern: str | re.Pattern):
     """Generates (k, line) pairs for every line of every k that has a pattern match
 
     :param files: A source of py files (e.g. module, root directory, or a Mapping itself)
@@ -151,7 +152,7 @@ def key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
                 yield k, line
 
 
-def print_key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
+def print_key_and_matched_lines(files: Files, pattern: str | re.Pattern):
     """Print (k, line) pairs for every line of every k that has a pattern match"""
     for k, lines in groupby(key_and_matched_lines(files, pattern), key=lambda x: x[0]):
         m = [x[1] for x in lines]
@@ -160,7 +161,7 @@ def print_key_and_matched_lines(files: Files, pattern: Union[str, re.Pattern]):
             print(f'{k}:\n\t{m}')
 
 
-def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
+def key_and_pattern_counts(files: Files, pattern: str | re.Pattern):
     """Generates (k, pattern_counts) pairs from scanning a store of .py files it scans, counting pattern matches
 
     :param files: A source of py files (e.g. module, root directory, or a Mapping itself)
@@ -187,7 +188,7 @@ def key_and_pattern_counts(files: Files, pattern: Union[str, re.Pattern]):
         yield k, pattern_count
 
 
-def print_py_files_containing_pattern(files: Files, pattern: Union[str, re.Pattern]):
+def print_py_files_containing_pattern(files: Files, pattern: str | re.Pattern):
     for key, pattern_count in key_and_pattern_counts(files, pattern):
         if pattern_count > 0:
             print(f'{key}: {pattern_count}')

@@ -3,7 +3,8 @@
 import os
 from contextlib import suppress
 from types import ModuleType
-from typing import Iterable, Union
+from typing import Union
+from collections.abc import Iterable
 from functools import wraps
 from importlib import import_module
 import warnings
@@ -100,8 +101,7 @@ class ModulesColl(Collection):
         return k in self._modules
 
     def __iter__(self):
-        for module in self._modules:
-            yield module
+        yield from self._modules
 
 
 class ModulesImportedByModule(KvReader, ModulesColl):
@@ -371,7 +371,7 @@ imports_for.most_common.__doc__ = (
 )
 
 imports_for.first_level = partial(
-    imports_for, post=lambda x: set(xx.split('.')[0] for xx in x)
+    imports_for, post=lambda x: {xx.split('.')[0] for xx in x}
 )
 imports_for.first_level.__doc__ = (
     "set for imported first level names (e.g. 'os' instead of 'os.path.etc.)"
@@ -386,11 +386,11 @@ imports_for.first_level_count.__doc__ = (
 
 imports_for.third_party = partial(
     imports_for,
-    post=lambda module: set(
+    post=lambda module: {
         xx.split('.')[0]
         for xx in module
         if xx.split('.')[0] not in builtin_module_names
-    ),
+    },
 )
 imports_for.third_party.__doc__ = (
     'imported (first level) names that are not builtin names '
