@@ -57,6 +57,7 @@ of just requiring ``numpy`` you may want to have ``numpy >= 1.3`` in your
 """
 
 # TODO: Better handling of the pkg -> file -> names mesh
+# TODO Get-it-done pressures made module an interface mess. Rethink. Refactor.
 
 import os
 from pathlib import Path
@@ -185,7 +186,7 @@ def _parse_dependency_list(dependency_string: str) -> Iterator[str]:
             yield line.rstrip()  # Extra safety to remove any trailing whitespace
 
 
-def extract_dependencies_from_setup_configs_content(
+def dependencies_from_setup_configs_content(
     setup_cfg_content: str,
 ) -> Iterator[str]:
     """Extract dependencies from a single setup.cfg file content.
@@ -254,7 +255,7 @@ def dependencies_from_setup_configs(
         setup_configs_mappings = setup_configs
         setup_configs = setup_configs_mappings.values()
     for content in setup_configs:
-        yield from extract_dependencies_from_setup_configs_content(content)
+        yield from dependencies_from_setup_configs_content(content)
 
 
 def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, Iterator[str], None]:
@@ -287,7 +288,7 @@ def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, Iterator[str]
     if os.path.isfile(cfg_path):
         with open(cfg_path, 'r') as fp:
             content = fp.read()
-        return list(extract_dependencies_from_setup_configs_content(content))
+        return list(dependencies_from_setup_configs_content(content))
 
     return None
 

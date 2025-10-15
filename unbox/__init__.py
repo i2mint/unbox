@@ -12,6 +12,7 @@ install) names
 
 
 """
+
 from unbox.base import *
 from unbox.base import builtin_module_names
 from unbox.missing_install_names import (
@@ -21,5 +22,6 @@ from unbox.missing_install_names import (
     print_missing_names,  # Print the missing install names for a given module.
     module_requirements_according_to_setupcfg,  # Get the module requirements from a setup.cfg file.
     install_requires_of_module,  # Get the install_requires of a module.
+    dependencies_from_setup_configs_content,
 )
 from unbox.dependencies import dependencies_from_pypi
