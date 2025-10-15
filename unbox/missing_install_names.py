@@ -61,14 +61,15 @@ of just requiring ``numpy`` you may want to have ``numpy >= 1.3`` in your
 import os
 from pathlib import Path
 from collections import namedtuple
-from typing import Iterable, Mapping, Optional, Union, Callable
+from typing import Iterable, Mapping, Optional, Union, Callable, Iterator
 import json
 from pathlib import PosixPath
 from types import ModuleType
 
 from unbox.base import files, data_files
 from unbox import IMPORT_NAMES, imports_for, NAMES, INSTALL_NAMES, ROOT
-from config2py import ConfigStore
+from config2py import ConfigStore, ConfigReader
+from xdol import SetupCfgReader
 
 name_map_envvar = 'IMPORT_TO_INSTALL_NAME_MAP_FILE'
 
@@ -84,6 +85,17 @@ with open(import_to_install_name_map_file, 'r') as fp:
 def get_import_names(
     import_names: IMPORT_NAMES, imports_finder=imports_for.third_party
 ) -> NAMES:
+    """
+    Get the import names from the given input.
+
+    Args:
+        import_names: The input import names, which can be a string, an iterable,
+            or a module/package object.
+        imports_finder: A function to find imports in the given input.
+
+    Returns:
+        A set of import names.
+    """
     if isinstance(import_names, str) or not isinstance(import_names, Iterable):
         return imports_finder(import_names)
     else:
@@ -149,22 +161,133 @@ def pkg_root_dir_name(pkg):
     return Path(pkg.__file__).parent.name
 
 
-def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, None]:
+def _parse_dependency_list(dependency_string: str) -> Iterator[str]:
+    """Parse a dependency list string into individual dependencies.
+
+    Args:
+        dependency_string: Multi-line or comma-separated dependency string
+
+    Yields:
+        Individual dependency strings, stripped of whitespace
+
+    Example:
+        >>> deps = '''
+        ...     requests>=2.0
+        ...     numpy
+        ...     pandas>=1.0,<2.0
+        ... '''
+        >>> list(_parse_dependency_list(deps))
+        ['requests>=2.0', 'numpy', 'pandas>=1.0,<2.0']
+    """
+    for line in dependency_string.strip().splitlines():
+        line = line.strip()
+        if line and not line.startswith('#'):
+            yield line.rstrip()  # Extra safety to remove any trailing whitespace
+
+
+def extract_dependencies_from_setup_configs_content(
+    setup_cfg_content: str,
+) -> Iterator[str]:
+    """Extract dependencies from a single setup.cfg file content.
+
+    Args:
+        setup_cfg_content: The text content of a setup.cfg file
+
+    Yields:
+        Individual dependency strings
+    """
+    from config2py.s_configparser import postprocess_ini_section_items
+    from collections import ChainMap
+
+    configs = ConfigReader(setup_cfg_content)
+
+    # Try to get install_requires from options section first
+    options_section = configs.get('options', {})
+    if options_section:
+        # Use postprocess to handle multiline values properly
+        processed_options = dict(postprocess_ini_section_items(options_section))
+        install_requires = processed_options.get('install_requires', '')
+    else:
+        install_requires = ''
+
+    # If not found in options, try other sections
+    if not install_requires:
+        install_requires = ChainMap(*configs.values()).get('install_requires', '')
+        if install_requires and install_requires.startswith('\n'):
+            # Apply postprocessing if it's a multiline string
+            install_requires = list(
+                postprocess_ini_section_items([('install_requires', install_requires)])
+            )[0][1]
+
+    # Handle both string and list cases
+    if isinstance(install_requires, list):
+        yield from install_requires
+    elif isinstance(install_requires, str) and install_requires:
+        yield from _parse_dependency_list(install_requires)
+
+
+FolderPath = Union[str, Path]
+Content = str
+
+
+def dependencies_from_setup_configs(
+    setup_configs: Union[FolderPath, Mapping[str, Content], Iterable[Content]],
+) -> Iterator[str]:
+    """Generate all dependencies from a mapping of setup.cfg files.
+
+    Args:
+        setup_configs: Mapping of filepath to setup.cfg file contents
+
+    Yields:
+        Individual dependency strings from all setup.cfg files
+
+    Example:
+        >>> configs = {
+        ...     'proj1/setup.cfg': '[options]\\ninstall_requires =\\n    requests\\n    numpy>=1.20'
+        ... }
+        >>> list(dependencies_from_setup_configs(configs))
+        ['requests', 'numpy>=1.20']
+    """
+    if isinstance(setup_configs, (str, Path)):
+        setup_configs = SetupCfgReader(setup_configs)
+    if isinstance(setup_configs, Mapping):
+        setup_configs_mappings = setup_configs
+        setup_configs = setup_configs_mappings.values()
+    for content in setup_configs:
+        yield from extract_dependencies_from_setup_configs_content(content)
+
+
+def module_requirements_according_to_setupcfg(pkg) -> Union[NAMES, Iterator[str], None]:
+    """Get dependencies from setup.cfg file(s).
+
+    Args:
+        pkg: Can be:
+            - A module/package object
+            - A string path to setup.cfg or directory containing it
+            - A Mapping of {filepath: setup.cfg_content} for batch processing
+
+    Returns:
+        List of dependency strings for single files, Iterator for Mappings, None if not found
+
+    Example:
+        >>> # For batch processing multiple setup.cfg contents:
+        >>> configs = {
+        ...     'proj1/setup.cfg': '[options]\\ninstall_requires =\\n    requests\\n    numpy>=1.20'
+        ... }
+        >>> list(module_requirements_according_to_setupcfg(configs))
+        ['requests', 'numpy>=1.20']
+    """
+    # Handle Mapping input for batch processing
+    if isinstance(pkg, Mapping) or not isinstance(pkg, (str, ModuleType)):
+        return dependencies_from_setup_configs(pkg)
+
+    # Handle single package/path
     cfg_path = get_setupcfg_path(pkg)
 
     if os.path.isfile(cfg_path):
-        from config2py import ConfigReader
-        from collections import ChainMap
-
-        configs = ConfigReader(cfg_path)
-        install_requires = configs.get('options', {}).get(
-            'install_requires', ''
-        ) or ChainMap(  # try getting it in options section
-            *configs.values()
-        ).get(
-            'install_requires', ''
-        )
-        return [x.strip() for x in install_requires.split()]
+        with open(cfg_path, 'r') as fp:
+            content = fp.read()
+        return list(extract_dependencies_from_setup_configs_content(content))
 
     return None
 
