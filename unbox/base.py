@@ -11,7 +11,7 @@ import warnings
 
 from findimports import ModuleGraph
 
-from dol import Collection, KvReader, lazyprop, wrap_kvs
+from dol import Collection, KvReader, lazyprop, wrap_kvs, wrapped_self
 
 ROOT = Union[str, ModuleType]
 NAMES = Iterable[str]
@@ -136,7 +136,10 @@ class ModuleNamesImportedByModule(ModulesImportedByModule):
         return k.imports
 
     def print_kvs(self):
-        for k, v in self.items():
+        # wrapped_self: inside this wrap_kvs-decorated class, ``self`` is the inner
+        # unwrapped store whose keys are module objects, not the key_of_id-decoded module
+        # NAME strings (dol Issue #18). Route through the outer store to print names.
+        for k, v in wrapped_self(self).items():
             print(f'{k}' + '\n' + '\n'.join('    ' + x for x in v))
 
 
