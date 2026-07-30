@@ -100,8 +100,13 @@ convention = "google"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
+# Note: `tests` is deliberately OUTSIDE the unbox package. unbox analyses its own
+# source tree in its doctests, so an in-package tests/ would (a) add `pytest` to
+# unbox's own imports, making it a falsely-"missing" install name, and (b) change
+# the file listing asserted by unbox.recipes.key_and_pattern_counts.
 testpaths = [
     "unbox",
+    "tests",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",
