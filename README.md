@@ -20,6 +20,19 @@ pyttsx3
 slink
 ```
 
+These are the names a package imports but doesn't declare. The declared names are
+read from the package's `pyproject.toml` (PEP 621 `[project] dependencies`), falling
+back to `setup.cfg` (`[options] install_requires`) for legacy projects:
+
+```python
+>>> import unbox
+>>> unbox.find_install_names(unbox)  # doctest: +SKIP
+['findimports', 'dol>=0.3.49', 'importlib_resources', 'config2py', 'py2store', 'xdol']
+```
+
+Use `unbox.module_requirements_according_to_pyproject(pkg, extras=True)` if you also
+want the `[project.optional-dependencies]` groups.
+
 ## Seeing what the dependencies of a package are, before installing it
 
 Simply get a list of dependencies for a package from PyPI.
@@ -93,10 +106,15 @@ As an example of what you can do with this set up, have a look at `imports_for`.
 Or don't have a look; just use it, since it's quite useful.
 
 ```python
-from unbox import imports_for 
+from unbox import imports_for
 import wave
-assert imports_for(wave) == {'warnings', 'builtins', 'sys', 'audioop', 'chunk', 'struct', 'collections'}
+
+assert {"collections", "struct", "sys"}.issubset(imports_for(wave))
 ```
+
+Note that we only check a subset here: what a stdlib module imports changes
+between python versions (py3.10's `wave` imports `audioop` and `chunk`, both
+removed in 3.13, while py3.12's imports `uuid`).
 
 At it's base, imports_for gives you a generator of import names. 
 With the `post` argument (defaulted to `set`) you can specify a callable that can produce the output 
@@ -106,6 +124,7 @@ We curried a few common ones for you, for your convenience:
 
 ```python
 from unbox import imports_for
+
 imports_for.counter  # imported names and their counts
 imports_for.most_common  # imported names and their counts, ordered by most common
 imports_for.first_level  # set for imported first level names (e.g. 'os' instead of 'os.path.etc.)
@@ -125,7 +144,7 @@ from unbox import (
     all_accessible_pkg_names,
     all_accessible_non_pkg_module_names,
     builtin_obj_names,
-    python_names
+    python_names,
 )
 ```
 

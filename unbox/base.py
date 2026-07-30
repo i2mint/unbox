@@ -23,8 +23,8 @@ INSTALL_NAMES = Union[
 
 def is_importable(name):
     if name in {
-        'antigravity',
-        'this',
+        "antigravity",
+        "this",
     }:  # we know these, but don't want to print or open browser page to verify!
         return True
     else:
@@ -35,18 +35,35 @@ def is_importable(name):
 
 
 def resolve_rootpath(obj) -> str:
+    """Resolve ``obj`` to an existing filesystem path.
+
+    ``obj`` can be a module object, a module name, or a path (in which case it is
+    returned as-is). A *package* resolves to its directory, while a plain
+    (non-package) module resolves to its ``.py`` file.
+
+    >>> import wave  # a plain module: has __file__ but no __path__
+    >>> resolve_rootpath(wave).endswith('wave.py')
+    True
+    >>> import unbox  # a package: has a __path__
+    >>> resolve_rootpath(unbox).endswith('unbox')
+    True
+    """
     root = obj
     if isinstance(root, str) and not os.path.exists(root):
         root = import_module(root)
     if isinstance(root, ModuleType):
-        root = next(iter(root.__path__), None)
-        if root is None:
-            root = root.__file__
-            if root is not None:
-                if root.endswith('__init__.py'):
-                    root = os.path.dirname(root)
-            else:
+        module = root
+        # Note: only packages have a __path__; plain modules must fall back to
+        # __file__ (namespace packages have neither a usable __path__ entry nor
+        # a __file__, and are rejected below).
+        path = next(iter(getattr(module, "__path__", None) or ()), None)
+        if path is None:
+            path = getattr(module, "__file__", None)
+            if path is None:
                 raise ValueError(f"Can't resolve rootpath from {obj}")
+            if path.endswith("__init__.py"):
+                path = os.path.dirname(path)
+        root = path
     assert isinstance(root, str) and os.path.exists(root)
     return root
 
@@ -75,7 +92,7 @@ class MyModuleGraph(ModuleGraph):
         # TODO: This doesn't work. Warnings still showing. Repair!
         if ignore_parse_path_warnings:
             with warnings.catch_warnings():
-                warnings.filterwarnings('ignore')
+                warnings.filterwarnings("ignore")
                 self.parsePathname(self._rootpath)
         else:
             self.parsePathname(self._rootpath)
@@ -123,7 +140,7 @@ def modname_to_modobj(self, modname):
 
 # TODO: Handle warnings -- there are way too many, way too often
 @wrap_kvs(
-    name='NamesImportedByModule',
+    name="NamesImportedByModule",
     key_of_id=modobj_to_modname,
     id_of_key=modname_to_modobj,
     __module__=__name__,
@@ -140,7 +157,7 @@ class ModuleNamesImportedByModule(ModulesImportedByModule):
         # unwrapped store whose keys are module objects, not the key_of_id-decoded module
         # NAME strings (dol Issue #18). Route through the outer store to print names.
         for k, v in wrapped_self(self).items():
-            print(f'{k}' + '\n' + '\n'.join('    ' + x for x in v))
+            print(f"{k}" + "\n" + "\n".join("    " + x for x in v))
 
 
 ModuleImports = ModuleNamesImportedByModule  # backcompatibility alias
@@ -152,7 +169,7 @@ import builtins
 import sys
 from dol import TextFiles
 
-python_versions = ('2.7', '3.5', '3.6', '3.7', '3.8', '3.9')
+python_versions = ("2.7", "3.5", "3.6", "3.7", "3.8", "3.9")
 
 try:
     from importlib.resources import files  # ... and any other things you want to get
@@ -162,18 +179,18 @@ except ImportError:
     except ModuleNotFoundError:
         raise ModuleNotFoundError(
             "No module named 'importlib_resources'. "
-            'pip install importlib_resources or conda install importlib_resources'
+            "pip install importlib_resources or conda install importlib_resources"
         )
 
-data_files = files('unbox').joinpath('data')
-standard_lib_names_data_dir = str(data_files.joinpath('standard_lib_names'))
+data_files = files("unbox").joinpath("data")
+standard_lib_names_data_dir = str(data_files.joinpath("standard_lib_names"))
 
-_your_python_version = '{}.{}'.format(*sys.version_info[:2])
+_your_python_version = "{}.{}".format(*sys.version_info[:2])
 
 
 # ---------------------------------------------------------------------------------------
 
-DFLT_PYTHON_VERSION = '3.9'
+DFLT_PYTHON_VERSION = "3.9"
 
 
 def documented_builtin_module_names():
@@ -192,7 +209,7 @@ def documented_builtin_module_names():
     """
     try:
         s = TextFiles(standard_lib_names_data_dir)
-        yield from s[_your_python_version + '.csv'].split('\n')
+        yield from s[_your_python_version + ".csv"].split("\n")
     except KeyError as e:
         warnings.warn(
             f"""
@@ -213,7 +230,7 @@ def documented_builtin_module_names():
     I'll just use the list for the default version ({DFLT_PYTHON_VERSION}).
     """
             )
-        yield from s[DFLT_PYTHON_VERSION + '.csv'].split('\n')
+        yield from s[DFLT_PYTHON_VERSION + ".csv"].split("\n")
 
 
 def _update_documented_builtin_module_names(expected_python_version: str):
@@ -229,7 +246,7 @@ def _update_documented_builtin_module_names(expected_python_version: str):
     )
     local_standard_lib_names = sorted(set(scan_locally_for_standard_lib_names()))
     s = TextFiles(standard_lib_names_data_dir)
-    s[_your_python_version + '.csv'] = '\n'.join(local_standard_lib_names)
+    s[_your_python_version + ".csv"] = "\n".join(local_standard_lib_names)
 
 
 def scan_locally_for_standard_lib_names(include_underscored=True):
@@ -250,20 +267,20 @@ def scan_locally_for_standard_lib_names(include_underscored=True):
     import os
 
     yield from {
-        'itertools',
-        'sys',
+        "itertools",
+        "sys",
     }  # exceptions that don't have a .py or package
     for filename in os.listdir(standard_lib_dir):
-        if not include_underscored and filename.startswith('_'):
+        if not include_underscored and filename.startswith("_"):
             continue
-        if filename == 'site-packages':
+        if filename == "site-packages":
             continue
         filepath = os.path.join(standard_lib_dir, filename)
         name, ext = os.path.splitext(filename)
-        if filename.endswith('.py') and os.path.isfile(filepath):
+        if filename.endswith(".py") and os.path.isfile(filepath):
             if str.isidentifier(name):
                 yield name
-        elif os.path.isdir(filepath) and '__init__.py' in os.listdir(filepath):
+        elif os.path.isdir(filepath) and "__init__.py" in os.listdir(filepath):
             yield name
 
 
@@ -272,7 +289,16 @@ scan_locally_for_standard_lib_names.standard_lib_dir = standard_lib_dir
 
 # Some useful collections of names #####################################################################################
 
-builtin_module_names = set(filter(is_importable, documented_builtin_module_names()))
+# The packaged standard_lib_names CSVs are incomplete (3.10.csv is missing
+# 'builtins') and stop at 3.10. Union in the interpreter's own authoritative
+# list (sys.stdlib_module_names, py3.10+) so classification is version-proof.
+_interpreter_stdlib_names = set(getattr(sys, "stdlib_module_names", ())) | set(
+    sys.builtin_module_names
+)
+builtin_module_names = (
+    set(filter(is_importable, documented_builtin_module_names()))
+    | _interpreter_stdlib_names
+)
 all_accessible_modules = list(pkgutil.iter_modules())
 all_accessible_pkg_names = {x.name for x in all_accessible_modules if x.ispkg}
 all_accessible_non_pkg_module_names = {
@@ -281,37 +307,37 @@ all_accessible_non_pkg_module_names = {
 builtin_obj_names = {x.lower() for x in dir(builtins)}
 
 py_reserved_words = {
-    'and',
-    'as',
-    'assert',
-    'break',
-    'class',
-    'continue',
-    'def',
-    'del',
-    'elif',
-    'else',
-    'except',
-    'exec',
-    'finally',
-    'for',
-    'from',
-    'global',
-    'if',
-    'import',
-    'in',
-    'is',
-    'lambda',
-    'not',
-    'or',
-    'pass',
-    'print',
-    'raise',
-    'return',
-    'try',
-    'while',
-    'with',
-    'yield',
+    "and",
+    "as",
+    "assert",
+    "break",
+    "class",
+    "continue",
+    "def",
+    "del",
+    "elif",
+    "else",
+    "except",
+    "exec",
+    "finally",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "in",
+    "is",
+    "lambda",
+    "not",
+    "or",
+    "pass",
+    "print",
+    "raise",
+    "return",
+    "try",
+    "while",
+    "with",
+    "yield",
 }
 
 # # TODO: Still let's through some known builtings, so listing here:
@@ -346,8 +372,13 @@ def imports_for(root, post=set):
     :return:
 
     >>> import wave
-    >>> sorted(imports_for(wave))  # doctest: +ELLIPSIS
-    ['audioop', 'builtins', 'chunk', 'collections', 'struct', 'sys'...
+    >>> imports = imports_for(wave)
+    >>> sorted({'collections', 'struct', 'sys'} & imports)
+    ['collections', 'struct', 'sys']
+
+    Note: only a version-stable subset of ``wave``'s imports is asserted here --
+    py3.10's ``wave`` imports ``audioop`` and ``chunk`` (both removed in 3.13),
+    while py3.12's imports ``uuid`` instead.
     """
     import itertools
 
@@ -363,25 +394,25 @@ from functools import partial
 from collections import Counter
 
 imports_for.set = partial(imports_for, post=set)
-imports_for.set.__doc__ = 'Set (so unordered and unique) imported names'
+imports_for.set.__doc__ = "Set (so unordered and unique) imported names"
 
 imports_for.counter = partial(imports_for, post=Counter)
-imports_for.counter.__doc__ = 'imported names and their counts'
+imports_for.counter.__doc__ = "imported names and their counts"
 
 imports_for.most_common = partial(imports_for, post=lambda x: Counter(x).most_common())
 imports_for.most_common.__doc__ = (
-    'imported names and their counts, ordered by most common'
+    "imported names and their counts, ordered by most common"
 )
 
 imports_for.first_level = partial(
-    imports_for, post=lambda x: {xx.split('.')[0] for xx in x}
+    imports_for, post=lambda x: {xx.split(".")[0] for xx in x}
 )
 imports_for.first_level.__doc__ = (
     "set for imported first level names (e.g. 'os' instead of 'os.path.etc.)"
 )
 
 imports_for.first_level_count = partial(
-    imports_for, post=lambda x: Counter(xx.split('.')[0] for xx in x)
+    imports_for, post=lambda x: Counter(xx.split(".")[0] for xx in x)
 )
 imports_for.first_level_count.__doc__ = (
     "count of imported first level names (e.g. 'os' instead of 'os.path.etc.)"
@@ -390,12 +421,12 @@ imports_for.first_level_count.__doc__ = (
 imports_for.third_party = partial(
     imports_for,
     post=lambda module: {
-        xx.split('.')[0]
+        xx.split(".")[0]
         for xx in module
-        if xx.split('.')[0] not in builtin_module_names
+        if xx.split(".")[0] not in builtin_module_names
     },
 )
 imports_for.third_party.__doc__ = (
-    'imported (first level) names that are not builtin names '
-    '(most probably third party packages)'
+    "imported (first level) names that are not builtin names "
+    "(most probably third party packages)"
 )
