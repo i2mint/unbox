@@ -60,6 +60,7 @@ of just requiring ``numpy`` you may want to have ``numpy >= 1.3`` in your
 # TODO Get-it-done pressures made module an interface mess. Rethink. Refactor.
 
 import os
+import re
 from pathlib import Path
 from collections import namedtuple
 from typing import Optional, Union
@@ -369,6 +370,25 @@ def get_install_names(
         return install_names
 
 
+_REQ_NAME_RE = re.compile(r'^\s*([A-Za-z0-9._-]+)')
+
+
+def _dist_name(requirement: str) -> str:
+    """Extract the bare distribution name from a PEP 508 requirement specifier.
+
+    >>> _dist_name('dol>=0.3.49')
+    'dol'
+    >>> _dist_name('pandas>=1.0,<2.0')
+    'pandas'
+    >>> _dist_name('numpy')
+    'numpy'
+    >>> _dist_name('tomli ; python_version < "3.11"')
+    'tomli'
+    """
+    m = _REQ_NAME_RE.match(requirement)
+    return m.group(1) if m else requirement.strip()
+
+
 def dependency_diff(
     install_names: INSTALL_NAMES,
     import_names: IMPORT_NAMES = None,
@@ -376,7 +396,13 @@ def dependency_diff(
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
 ):
-    install_names = set(get_install_names(install_names, install_names_finder))
+    # Note: declared requirements carry PEP 508 version specifiers and markers
+    # (e.g. 'dol>=0.3.49'), while the import-derived names are bare ('dol').
+    # They must be normalized to bare distribution names before being diffed,
+    # or every pinned dependency is falsely reported as missing.
+    install_names = {
+        _dist_name(x) for x in get_install_names(install_names, install_names_finder)
+    }
     install_names_needed_for_imports = set(
         install_names_for_imports(import_names, import_to_install_name_map, strict)
     )
