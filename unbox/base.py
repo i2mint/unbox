@@ -35,18 +35,35 @@ def is_importable(name):
 
 
 def resolve_rootpath(obj) -> str:
+    """Resolve ``obj`` to an existing filesystem path.
+
+    ``obj`` can be a module object, a module name, or a path (in which case it is
+    returned as-is). A *package* resolves to its directory, while a plain
+    (non-package) module resolves to its ``.py`` file.
+
+    >>> import wave  # a plain module: has __file__ but no __path__
+    >>> resolve_rootpath(wave).endswith('wave.py')
+    True
+    >>> import unbox  # a package: has a __path__
+    >>> resolve_rootpath(unbox).endswith('unbox')
+    True
+    """
     root = obj
     if isinstance(root, str) and not os.path.exists(root):
         root = import_module(root)
     if isinstance(root, ModuleType):
-        root = next(iter(root.__path__), None)
-        if root is None:
-            root = root.__file__
-            if root is not None:
-                if root.endswith('__init__.py'):
-                    root = os.path.dirname(root)
-            else:
+        module = root
+        # Note: only packages have a __path__; plain modules must fall back to
+        # __file__ (namespace packages have neither a usable __path__ entry nor
+        # a __file__, and are rejected below).
+        path = next(iter(getattr(module, '__path__', None) or ()), None)
+        if path is None:
+            path = getattr(module, '__file__', None)
+            if path is None:
                 raise ValueError(f"Can't resolve rootpath from {obj}")
+            if path.endswith('__init__.py'):
+                path = os.path.dirname(path)
+        root = path
     assert isinstance(root, str) and os.path.exists(root)
     return root
 
@@ -346,8 +363,13 @@ def imports_for(root, post=set):
     :return:
 
     >>> import wave
-    >>> sorted(imports_for(wave))  # doctest: +ELLIPSIS
-    ['audioop', 'builtins', 'chunk', 'collections', 'struct', 'sys'...
+    >>> imports = imports_for(wave)
+    >>> sorted({'collections', 'struct', 'sys'} & imports)
+    ['collections', 'struct', 'sys']
+
+    Note: only a version-stable subset of ``wave``'s imports is asserted here --
+    py3.10's ``wave`` imports ``audioop`` and ``chunk`` (both removed in 3.13),
+    while py3.12's imports ``uuid`` instead.
     """
     import itertools
 
