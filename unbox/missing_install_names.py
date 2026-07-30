@@ -16,8 +16,10 @@ that are not used.
 
 What does this mean?
 
-Install names are those you have declared you needed to install the packages (like
-what you put in the ```` section of your ``setup.cfg`` if that's what you use.
+Install names are those you have declared you needed to install the packages: the
+``[project] dependencies`` of your ``pyproject.toml``, or the ``[options]
+install_requires`` of your ``setup.cfg`` if that's what you use. Both are read
+(``pyproject.toml`` first) -- see ``find_install_names``.
 
 Why are the missing or unused? It has to do with imports. If you declared you needed a
 package to be installed (a dependency) but never import it, it's unused.
@@ -66,7 +68,6 @@ from collections import namedtuple
 from typing import Optional, Union
 from collections.abc import Iterable, Mapping, Callable, Iterator
 import json
-from pathlib import PosixPath
 from types import ModuleType
 
 from unbox.base import files, data_files
@@ -287,7 +288,7 @@ def module_requirements_according_to_setupcfg(pkg) -> NAMES | Iterator[str] | No
     # Handle single package/path
     cfg_path = get_setupcfg_path(pkg)
 
-    if os.path.isfile(cfg_path):
+    if cfg_path and os.path.isfile(cfg_path):
         with open(cfg_path) as fp:
             content = fp.read()
         return list(dependencies_from_setup_configs_content(content))
@@ -299,8 +300,20 @@ class ProbablyPythonPathError(ValueError):
     """To raise when a module requested is probably not on the python path"""
 
 
-def get_setupcfg_path(x) -> str:
-    """Flexible search for the setupcfg path for an object x"""
+# Files that identify a project root when a caller points at one directly.
+_PROJECT_FILENAMES = ('pyproject.toml', 'setup.cfg', 'setup.py')
+
+
+def _get_project_file_path(x, filename: str) -> str | None:
+    """Flexible search for a project file (``filename``) belonging to ``x``.
+
+    ``x`` can be a module/package object, or a path to a project folder, to a
+    package's ``__init__.py``, or to a project file. Returns ``None`` when no
+    candidate location could be determined.
+
+    This is the general form of the public ``get_setupcfg_path`` and
+    ``get_pyproject_path``.
+    """
     if isinstance(x, ModuleType):
         if x.__file__ is None:
             raise ProbablyPythonPathError(
@@ -309,21 +322,45 @@ def get_setupcfg_path(x) -> str:
                 "builtin. If it's not a builtin, it's probably that you don't have the "
                 'package on your python path.'
             )
-        return str(PosixPath(x.__file__).parent.parent / 'setup.cfg')
+        return str(Path(x.__file__).parent.parent / filename)
     elif isinstance(x, str):
-        path = PosixPath(x)
+        path = Path(x)
         if path.is_dir():
-            if (path / 'setup.cfg').is_file():  # proj/setup.cfg
-                return str(path / 'setup.cfg')
-            elif (path.parent / 'setup.cfg').is_file():  # proj/proj
-                return str(path.parent / 'setup.cfg')
+            if (path / filename).is_file():  # proj/<filename>
+                return str(path / filename)
+            elif (path.parent / filename).is_file():  # proj/proj
+                return str(path.parent / filename)
         elif path.name.endswith('__init__.py'):
-            return str(path.parent.parent / 'setup.cfg')
-        else:
-            assert path.name.endswith(
-                'setup.cfg'
-            ), f"Can't find setup.cfg for {path.name=}"
+            return str(path.parent.parent / filename)
+        elif path.name == filename:
             return str(path)
+        elif path.name in _PROJECT_FILENAMES:
+            # Pointed at a *different* project file (e.g. setup.cfg while we're
+            # looking for pyproject.toml): resolve filename next to it.
+            return str(path.parent / filename)
+        else:
+            raise AssertionError(f"Can't find {filename} for {path.name=}")
+    return None
+
+
+def get_setupcfg_path(x) -> str | None:
+    """Flexible search for the ``setup.cfg`` path for an object x
+
+    >>> import unbox
+    >>> get_setupcfg_path(unbox).endswith('setup.cfg')
+    True
+    """
+    return _get_project_file_path(x, 'setup.cfg')
+
+
+def get_pyproject_path(x) -> str | None:
+    """Flexible search for the ``pyproject.toml`` path for an object x
+
+    >>> import unbox
+    >>> get_pyproject_path(unbox).endswith('pyproject.toml')
+    True
+    """
+    return _get_project_file_path(x, 'pyproject.toml')
 
 
 def get_module_obj(module) -> ModuleType:
@@ -351,12 +388,110 @@ install_requires_of_module = (
 install_names_from_setup_cfg_file = install_requires_of_module  # backcompa alias
 
 
-def find_install_names(pkg) -> NAMES:
-    install_names = install_names_from_setup_cfg_file(pkg)
-    if install_names is not None:
-        return install_names
-    else:
-        raise ValueError(f"Can't find install names for {pkg=}")
+# The PEP 621 (pyproject.toml) counterparts of the setup.cfg readers above ##############
+
+Extras = Union[bool, Iterable[str]]
+
+
+def dependencies_from_pyproject_content(
+    pyproject_content: str, *, extras: Extras = False
+) -> Iterator[str]:
+    """Extract the declared dependencies from ``pyproject.toml`` text (PEP 621).
+
+    By default only the required ``[project] dependencies`` are yielded:
+
+    >>> content = '''
+    ... [project]
+    ... name = "proj"
+    ... dependencies = ["requests", "numpy>=1.20"]
+    ... [project.optional-dependencies]
+    ... dev = ["pytest>=7.0"]
+    ... docs = ["sphinx"]
+    ... '''
+    >>> list(dependencies_from_pyproject_content(content))
+    ['requests', 'numpy>=1.20']
+
+    Pass ``extras=True`` to also yield every ``[project.optional-dependencies]``
+    group, or an iterable of group names to pick specific ones:
+
+    >>> list(dependencies_from_pyproject_content(content, extras=True))
+    ['requests', 'numpy>=1.20', 'pytest>=7.0', 'sphinx']
+    >>> list(dependencies_from_pyproject_content(content, extras=['dev']))
+    ['requests', 'numpy>=1.20', 'pytest>=7.0']
+
+    Absent or empty sections simply yield nothing (note that ``[build-system]
+    requires`` are build-time requirements, not dependencies, so are ignored):
+
+    >>> list(dependencies_from_pyproject_content(
+    ...     '[build-system]\\nrequires = ["hatchling"]'
+    ... ))
+    []
+    """
+    # tomllib is in the standard library as of py3.11 -- which is why this package
+    # declares requires-python >= 3.11. (Using the tomli backport instead would
+    # introduce a third-party import name into unbox's own dependency analysis.)
+    import tomllib
+
+    project = tomllib.loads(pyproject_content).get('project', None) or {}
+    yield from project.get('dependencies', None) or ()
+    if extras:
+        optional = project.get('optional-dependencies', None) or {}
+        groups = optional if extras is True else extras
+        for group in groups:
+            yield from optional.get(group, None) or ()
+
+
+def module_requirements_according_to_pyproject(
+    pkg, *, extras: Extras = False
+) -> NAMES | None:
+    """Get dependencies from a package's ``pyproject.toml``.
+
+    Args:
+        pkg: A module/package object, or a path to a project folder, a package's
+            ``__init__.py``, or a ``pyproject.toml`` file.
+        extras: Whether to also include ``[project.optional-dependencies]``
+            (see ``dependencies_from_pyproject_content``).
+
+    Returns:
+        The list of dependency strings, or ``None`` if there is no
+        ``pyproject.toml`` to read -- so that callers can fall back to another
+        source (see ``find_install_names``).
+    """
+    path = get_pyproject_path(pkg)
+    if path and os.path.isfile(path):
+        with open(path, encoding='utf-8') as fp:
+            return list(dependencies_from_pyproject_content(fp.read(), extras=extras))
+    return None
+
+
+install_names_from_pyproject_file = (
+    module_requirements_according_to_pyproject  # symmetry alias
+)
+
+#: Sources of declared install names, tried in order by ``find_install_names``.
+DFLT_INSTALL_NAMES_FINDERS = (
+    module_requirements_according_to_pyproject,
+    install_names_from_setup_cfg_file,
+)
+
+
+def find_install_names(pkg, *, finders=DFLT_INSTALL_NAMES_FINDERS) -> NAMES:
+    """Find the install names (dependencies) a package declares.
+
+    Tries ``pyproject.toml`` (PEP 621 ``[project] dependencies``) first, then
+    falls back to ``setup.cfg`` (``[options] install_requires``) for legacy
+    projects.
+
+    :param pkg: An imported package, or a path to one.
+    :param finders: The sources to try, in order. Each is called with ``pkg``
+        and should return ``None`` when it has nothing to say.
+    :raises ValueError: if none of the ``finders`` found any declared names.
+    """
+    for finder in finders:
+        install_names = finder(pkg)
+        if install_names is not None:
+            return install_names
+    raise ValueError(f"Can't find install names for {pkg=}")
 
 
 def get_install_names(
@@ -430,8 +565,8 @@ def dependency_diff_for_pkg(
     :param strict: Whether you want to allow only those names that are explicitly
     declared in ``import_to_install_name_map`` or not. (Default is False).
     :param install_names_finder: A function that takes the package and finds the
-    declared install names (By default only looks in ``setup.cfg``, but you can make
-    it look for ``requirements.txt``, or where-ever.
+    declared install names (by default looks in ``pyproject.toml``, then
+    ``setup.cfg``, but you can make it look for ``requirements.txt``, or where-ever).
     :return: The {import_names - install_names} and {install_names - import_names} sets.
 
     The typical use would be when you want to add missing dependencies in your
