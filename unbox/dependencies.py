@@ -8,19 +8,21 @@ def pypi_package_data(package_name):
     from urllib.error import HTTPError
     import json
 
-    url = f'https://pypi.org/pypi/{package_name}/json'
+    url = f"https://pypi.org/pypi/{package_name}/json"
 
     try:
         with urlopen(url) as response:
             data = response.read()
-            return json.loads(data.decode('utf-8'))
+            return json.loads(data.decode("utf-8"))
     except HTTPError as e:
         raise ValueError(
             f"Failed to fetch package info for '{package_name}' from PyPI: {e}"
         )
 
 
-def pypi_requires_dist(package_name: str,) -> dict:
+def pypi_requires_dist(
+    package_name: str,
+) -> dict:
     """
     Fetch dependencies for a package from PyPI.
 
@@ -31,14 +33,14 @@ def pypi_requires_dist(package_name: str,) -> dict:
         dict: Dictionary containing package dependencies.
     """
     package_data = pypi_package_data(package_name)
-    return package_data['info'].get('requires_dist', ()) or ()
+    return package_data["info"].get("requires_dist", ()) or ()
 
 
 def dependencies_from_pypi(
     package_name,
     *,
-    requirement_filter=lambda x: 'extra == ' not in x,
-    requirement_trans=lambda x: re.match(r'[\w-]+', x).group(0),
+    requirement_filter=lambda x: "extra == " not in x,
+    requirement_trans=lambda x: re.match(r"[\w-]+", x).group(0),
     egress=list,
 ):
     """Simply get a list of dependencies for a package from PyPI.
@@ -46,7 +48,7 @@ def dependencies_from_pypi(
     >>> dependencies_from_pypi('pandas')  # doctest: +SKIP
     ['numpy', 'numpy', 'python-dateutil', 'pytz', 'tzdata']
 
-    But you have control over the requirements that are returned, 
+    But you have control over the requirements that are returned,
     and how they are returned:
 
     >>> it = dependencies_from_pypi(

@@ -75,10 +75,10 @@ from unbox import IMPORT_NAMES, imports_for, NAMES, INSTALL_NAMES, ROOT
 from config2py import ConfigStore, ConfigReader
 from xdol import SetupCfgReader
 
-name_map_envvar = 'IMPORT_TO_INSTALL_NAME_MAP_FILE'
+name_map_envvar = "IMPORT_TO_INSTALL_NAME_MAP_FILE"
 
 # import to install name: What requirement should be used for a given import name?
-DFLT_NAME_MAP_FILE = str(data_files / 'dflt_import_to_install_name_map.json')
+DFLT_NAME_MAP_FILE = str(data_files / "dflt_import_to_install_name_map.json")
 
 import_to_install_name_map_file = os.getenv(name_map_envvar, DFLT_NAME_MAP_FILE)
 
@@ -110,9 +110,9 @@ def get_import_names(
 def get_import_to_install_name_map(import_to_install_name_map):
     if import_to_install_name_map is None:
         import_to_install_name_map = dflt_import_to_install_name_map
-    assert isinstance(
-        import_to_install_name_map, Mapping
-    ), f'Not a mapping: {import_to_install_name_map}'
+    assert isinstance(import_to_install_name_map, Mapping), (
+        f"Not a mapping: {import_to_install_name_map}"
+    )
     return import_to_install_name_map
 
 
@@ -125,7 +125,7 @@ def map_if_found(mapping: Mapping, to_map: Iterable, strict=False):
             if not strict:
                 yield x
             else:
-                raise AssertionError(f'{x} not in mapping')
+                raise AssertionError(f"{x} not in mapping")
 
 
 def install_names_for_imports(
@@ -185,7 +185,7 @@ def _parse_dependency_list(dependency_string: str) -> Iterator[str]:
     """
     for line in dependency_string.strip().splitlines():
         line = line.strip()
-        if line and not line.startswith('#'):
+        if line and not line.startswith("#"):
             yield line.rstrip()  # Extra safety to remove any trailing whitespace
 
 
@@ -206,21 +206,21 @@ def dependencies_from_setup_configs_content(
     configs = ConfigReader(setup_cfg_content)
 
     # Try to get install_requires from options section first
-    options_section = configs.get('options', {})
+    options_section = configs.get("options", {})
     if options_section:
         # Use postprocess to handle multiline values properly
         processed_options = dict(postprocess_ini_section_items(options_section))
-        install_requires = processed_options.get('install_requires', '')
+        install_requires = processed_options.get("install_requires", "")
     else:
-        install_requires = ''
+        install_requires = ""
 
     # If not found in options, try other sections
     if not install_requires:
-        install_requires = ChainMap(*configs.values()).get('install_requires', '')
-        if install_requires and install_requires.startswith('\n'):
+        install_requires = ChainMap(*configs.values()).get("install_requires", "")
+        if install_requires and install_requires.startswith("\n"):
             # Apply postprocessing if it's a multiline string
             install_requires = list(
-                postprocess_ini_section_items([('install_requires', install_requires)])
+                postprocess_ini_section_items([("install_requires", install_requires)])
             )[0][1]
 
     # Handle both string and list cases
@@ -301,7 +301,7 @@ class ProbablyPythonPathError(ValueError):
 
 
 # Files that identify a project root when a caller points at one directly.
-_PROJECT_FILENAMES = ('pyproject.toml', 'setup.cfg', 'setup.py')
+_PROJECT_FILENAMES = ("pyproject.toml", "setup.cfg", "setup.py")
 
 
 def _get_project_file_path(x, filename: str) -> str | None:
@@ -320,7 +320,7 @@ def _get_project_file_path(x, filename: str) -> str | None:
                 f"Sorry, but this module type ({x}) didn't have a __file__: "
                 "This often happens when you're pointing to a namespace module or "
                 "builtin. If it's not a builtin, it's probably that you don't have the "
-                'package on your python path.'
+                "package on your python path."
             )
         return str(Path(x.__file__).parent.parent / filename)
     elif isinstance(x, str):
@@ -330,7 +330,7 @@ def _get_project_file_path(x, filename: str) -> str | None:
                 return str(path / filename)
             elif (path.parent / filename).is_file():  # proj/proj
                 return str(path.parent / filename)
-        elif path.name.endswith('__init__.py'):
+        elif path.name.endswith("__init__.py"):
             return str(path.parent.parent / filename)
         elif path.name == filename:
             return str(path)
@@ -350,7 +350,7 @@ def get_setupcfg_path(x) -> str | None:
     >>> get_setupcfg_path(unbox).endswith('setup.cfg')
     True
     """
-    return _get_project_file_path(x, 'setup.cfg')
+    return _get_project_file_path(x, "setup.cfg")
 
 
 def get_pyproject_path(x) -> str | None:
@@ -360,7 +360,7 @@ def get_pyproject_path(x) -> str | None:
     >>> get_pyproject_path(unbox).endswith('pyproject.toml')
     True
     """
-    return _get_project_file_path(x, 'pyproject.toml')
+    return _get_project_file_path(x, "pyproject.toml")
 
 
 def get_module_obj(module) -> ModuleType:
@@ -432,10 +432,10 @@ def dependencies_from_pyproject_content(
     # introduce a third-party import name into unbox's own dependency analysis.)
     import tomllib
 
-    project = tomllib.loads(pyproject_content).get('project', None) or {}
-    yield from project.get('dependencies', None) or ()
+    project = tomllib.loads(pyproject_content).get("project", None) or {}
+    yield from project.get("dependencies", None) or ()
     if extras:
-        optional = project.get('optional-dependencies', None) or {}
+        optional = project.get("optional-dependencies", None) or {}
         groups = optional if extras is True else extras
         for group in groups:
             yield from optional.get(group, None) or ()
@@ -459,7 +459,7 @@ def module_requirements_according_to_pyproject(
     """
     path = get_pyproject_path(pkg)
     if path and os.path.isfile(path):
-        with open(path, encoding='utf-8') as fp:
+        with open(path, encoding="utf-8") as fp:
             return list(dependencies_from_pyproject_content(fp.read(), extras=extras))
     return None
 
@@ -505,7 +505,7 @@ def get_install_names(
         return install_names
 
 
-_REQ_NAME_RE = re.compile(r'^\s*([A-Za-z0-9._-]+)')
+_REQ_NAME_RE = re.compile(r"^\s*([A-Za-z0-9._-]+)")
 
 
 def _dist_name(requirement: str) -> str:
@@ -594,7 +594,7 @@ def dependency_diff_for_pkg(
     )
     missing_install_names = missing_install_names - {pkg_root_dir_name(pkg)}
 
-    MissingInstallNames = namedtuple('MissingInstallNames', ['missing', 'unused'])
+    MissingInstallNames = namedtuple("MissingInstallNames", ["missing", "unused"])
     return MissingInstallNames(missing_install_names, unused_install_names)
 
 
@@ -619,4 +619,4 @@ def print_missing_names(
         strict=strict,
         install_names_finder=install_names_finder,
     )
-    print(*sorted(missing_install_names), sep='\n')
+    print(*sorted(missing_install_names), sep="\n")

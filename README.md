@@ -93,9 +93,18 @@ As an example of what you can do with this set up, have a look at `imports_for`.
 Or don't have a look; just use it, since it's quite useful.
 
 ```python
-from unbox import imports_for 
+from unbox import imports_for
 import wave
-assert imports_for(wave) == {'warnings', 'builtins', 'sys', 'audioop', 'chunk', 'struct', 'collections'}
+
+assert imports_for(wave) == {
+    "warnings",
+    "builtins",
+    "sys",
+    "audioop",
+    "chunk",
+    "struct",
+    "collections",
+}
 ```
 
 At it's base, imports_for gives you a generator of import names. 
@@ -106,6 +115,7 @@ We curried a few common ones for you, for your convenience:
 
 ```python
 from unbox import imports_for
+
 imports_for.counter  # imported names and their counts
 imports_for.most_common  # imported names and their counts, ordered by most common
 imports_for.first_level  # set for imported first level names (e.g. 'os' instead of 'os.path.etc.)
@@ -125,7 +135,7 @@ from unbox import (
     all_accessible_pkg_names,
     all_accessible_non_pkg_module_names,
     builtin_obj_names,
-    python_names
+    python_names,
 )
 ```
 
