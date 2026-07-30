@@ -289,7 +289,16 @@ scan_locally_for_standard_lib_names.standard_lib_dir = standard_lib_dir
 
 # Some useful collections of names #####################################################################################
 
-builtin_module_names = set(filter(is_importable, documented_builtin_module_names()))
+# The packaged standard_lib_names CSVs are incomplete (3.10.csv is missing
+# 'builtins') and stop at 3.10. Union in the interpreter's own authoritative
+# list (sys.stdlib_module_names, py3.10+) so classification is version-proof.
+_interpreter_stdlib_names = set(getattr(sys, 'stdlib_module_names', ())) | set(
+    sys.builtin_module_names
+)
+builtin_module_names = (
+    set(filter(is_importable, documented_builtin_module_names()))
+    | _interpreter_stdlib_names
+)
 all_accessible_modules = list(pkgutil.iter_modules())
 all_accessible_pkg_names = {x.name for x in all_accessible_modules if x.ispkg}
 all_accessible_non_pkg_module_names = {
