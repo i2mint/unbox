@@ -32,7 +32,11 @@ classifiers = [
     "Topic :: Software Development :: Build Tools",
 ]
 dependencies = [
-    "findimports",
+    # >=2.4 is the first MIT release (findimports was GPL-2.0-or-later through
+    # 2.3.0). unbox is Apache-2.0, so the floor keeps the licence guarantee
+    # explicit rather than accidental: without it, a constraints file, an old
+    # lockfile or a stale wheel cache could resolve a GPL-era release.
+    "findimports>=2.4",
     "dol>=0.3.49",
     "importlib_resources",
     "config2py",
