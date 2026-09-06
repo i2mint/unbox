@@ -132,6 +132,8 @@ def install_names_for_imports(
     import_names: IMPORT_NAMES,
     import_to_install_name_map: dict | None = None,
     strict=False,
+    *,
+    imports_finder: Callable[[ROOT], NAMES] = imports_for.third_party,
 ) -> set:
     """
     Get a set of install names, i.e. names that are used in ``pip install PKG_NAME``.
@@ -152,9 +154,13 @@ def install_names_for_imports(
     :param import_to_install_name_map: A dict mapping import names (keys) to install
         names
     :param strict: Whether to assert that all import_names are in the map
+    :param imports_finder: How to extract import names when ``import_names`` is a
+        module/package/path rather than an iterable of names. Defaults to
+        ``imports_for.third_party`` (every module under the root); pass
+        ``imports_for.runtime`` to leave out imports made only by the package's tests.
     :return:
     """
-    import_names = get_import_names(import_names)
+    import_names = get_import_names(import_names, imports_finder)
     import_to_install_name_map = get_import_to_install_name_map(
         import_to_install_name_map
     )
@@ -530,7 +536,17 @@ def dependency_diff(
     import_to_install_name_map: dict | None = None,
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
+    *,
+    imports_finder: Callable[[ROOT], NAMES] = imports_for.third_party,
 ):
+    """Diff declared install names against the install names the imports call for.
+
+    See ``dependency_diff_for_pkg``, which is the same thing for a package.
+
+    :param imports_finder: How to extract import names from ``import_names`` when it
+        is a module/package/path. Defaults to ``imports_for.third_party``; pass
+        ``imports_for.runtime`` to leave out imports made only by the package's tests.
+    """
     # Note: declared requirements carry PEP 508 version specifiers and markers
     # (e.g. 'dol>=0.3.49'), while the import-derived names are bare ('dol').
     # They must be normalized to bare distribution names before being diffed,
@@ -539,7 +555,12 @@ def dependency_diff(
         _dist_name(x) for x in get_install_names(install_names, install_names_finder)
     }
     install_names_needed_for_imports = set(
-        install_names_for_imports(import_names, import_to_install_name_map, strict)
+        install_names_for_imports(
+            import_names,
+            import_to_install_name_map,
+            strict,
+            imports_finder=imports_finder,
+        )
     )
     missing_install_names = install_names_needed_for_imports - install_names
     unused_install_names = install_names - install_names_needed_for_imports
@@ -551,6 +572,8 @@ def dependency_diff_for_pkg(
     import_to_install_name_map: dict | None = None,
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
+    *,
+    exclude_tests: bool = False,
 ):
     r"""
     Get the imported names that are not declared to be installed those names declared
@@ -567,6 +590,12 @@ def dependency_diff_for_pkg(
     :param install_names_finder: A function that takes the package and finds the
     declared install names (by default looks in ``pyproject.toml``, then
     ``setup.cfg``, but you can make it look for ``requirements.txt``, or where-ever).
+    :param exclude_tests: Whether to ignore the imports made only by the package's
+    own tests (an in-package ``tests/``, ``test_*.py``, ``conftest.py``: see
+    ``unbox.DFLT_TEST_MODULE_PATTERNS``). Those imports (``pytest``, ``hypothesis``,
+    ...) are needed to *develop* the package, not to *run* it, so counting them
+    reports them as missing *install* requirements. Default is ``False``, which
+    keeps the historical (whole-source-tree) behavior.
     :return: The {import_names - install_names} and {install_names - import_names} sets.
 
     The typical use would be when you want to add missing dependencies in your
@@ -591,6 +620,9 @@ def dependency_diff_for_pkg(
         import_to_install_name_map=import_to_install_name_map,
         strict=strict,
         install_names_finder=install_names_finder,
+        imports_finder=(
+            imports_for.runtime if exclude_tests else imports_for.third_party
+        ),
     )
     missing_install_names = missing_install_names - {pkg_root_dir_name(pkg)}
 
@@ -603,9 +635,11 @@ def print_missing_names(
     import_to_install_name_map: dict | None = None,
     strict=False,
     install_names_finder: Callable[[ROOT], NAMES] = find_install_names,
+    *,
+    exclude_tests: bool = False,
 ):
     """
-    See ``dependency_diff_for_pkg`` for more info.
+    See ``dependency_diff_for_pkg`` for more info (including ``exclude_tests``).
 
     >>> import unbox
     >>> print_missing_names(unbox)
@@ -618,5 +652,6 @@ def print_missing_names(
         import_to_install_name_map=import_to_install_name_map,
         strict=strict,
         install_names_finder=install_names_finder,
+        exclude_tests=exclude_tests,
     )
     print(*sorted(missing_install_names), sep="\n")

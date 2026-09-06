@@ -130,6 +130,29 @@ imports_for.most_common  # imported names and their counts, ordered by most comm
 imports_for.first_level  # set for imported first level names (e.g. 'os' instead of 'os.path.etc.)
 imports_for.first_level_count  # count of imported first level names (e.g. 'os' instead of 'os.path.etc.)
 imports_for.third_party  # imported (first level) names that are not builtin names (most probably third party packages)"
+imports_for.runtime  # like third_party, but ignoring the imports made only by the package's own tests
+```
+
+### Test-only imports
+
+By default `imports_for` scans *every* module under the root, so a package with an
+in-package `tests/` folder will list `pytest` (and friends) amongst its imports --
+and `print_missing_names` will then report them as missing *install* requirements,
+though they're only needed to develop the package, not to run it.
+
+Scoping those out is opt-in (the default is unchanged):
+
+```python
+imports_for.runtime(some_package)  # third-party imports, minus the test-only ones
+print_missing_names(some_package, exclude_tests=True)
+```
+
+What counts as a test module is `unbox.DFLT_TEST_MODULE_PATTERNS` -- fnmatch patterns
+matched against each segment of the dotted module name. For anything else, pass your
+own `exclude` (patterns and/or predicates on the full dotted name) to `imports_for`:
+
+```python
+imports_for.third_party(some_package, exclude=('tests', 'scrap', lambda name: 'examples' in name))
 ```
 
 ## Collections of python names
