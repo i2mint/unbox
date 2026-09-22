@@ -29,7 +29,14 @@ def is_importable(name):
     }:  # we know these, but don't want to print or open browser page to verify!
         return True
     else:
-        with suppress(ModuleNotFoundError):
+        with suppress(ImportError):
+            # ImportError (not just its ModuleNotFoundError subclass): some
+            # stdlib modules exist as names but raise a platform-specific
+            # ImportError when actually imported -- e.g. `crypt` on Windows
+            # raises `ImportError("The crypt module is not supported on
+            # Windows")`, not ModuleNotFoundError, so it was escaping this
+            # check unsuppressed and crashing every module-level scan that
+            # calls is_importable (see #6 item 2 in i2mint/unbox).
             import_module(name)  # if this works...
             return True
     return False
@@ -212,12 +219,19 @@ def documented_builtin_module_names():
         s = TextFiles(standard_lib_names_data_dir)
         yield from s[_your_python_version + ".csv"].split("\n")
     except KeyError as e:
+        if hasattr(sys, "stdlib_module_names"):
+            # The interpreter's own authoritative list (py3.10+) already covers
+            # this case -- it's unioned in at `builtin_module_names` below -- so
+            # the packaged-CSV gap is moot here. Skip the warning and the slow
+            # filesystem scan (see #6: this branch used to fire, with both, on
+            # every interpreter newer than the packaged CSVs' last version).
+            return
         warnings.warn(
             f"""
     It seems I can't access the python builtin names data, or can't find any
     documented list for your version ({_your_python_version})
     so I'll try to scan your system for these names.
-    You can also try to use 
+    You can also try to use
     `_update_documented_builtin_module_names(expected_python_version)`
     to update the data.
     """
@@ -227,7 +241,7 @@ def documented_builtin_module_names():
         except Exception as e:
             warnings.warn(
                 f"""
-    An unexpected error ({e}) occured when scanning your system. 
+    An unexpected error ({e}) occured when scanning your system.
     I'll just use the list for the default version ({DFLT_PYTHON_VERSION}).
     """
             )
