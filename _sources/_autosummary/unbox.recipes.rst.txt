@@ -1,0 +1,25 @@
+unbox.recipes
+=============
+
+.. automodule:: unbox.recipes
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      get_py_files
+      imports_of_package
+      key_and_matched_lines
+      key_and_pattern_counts
+      print_imports_of_package
+      print_key_and_matched_lines
+      print_py_files_containing_pattern
+      signature_less_builtin_obj_names
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ModuleStrings
+   

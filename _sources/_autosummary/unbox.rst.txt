@@ -1,0 +1,16 @@
+﻿unbox
+=====
+
+.. automodule:: unbox
+
+   
+.. rubric:: Modules
+
+.. autosummary::
+   :toctree:
+   :recursive:
+
+   base
+   dependencies
+   missing_install_names
+   recipes

@@ -1,0 +1,23 @@
+# unbox
+
+> Finding imports in code
+
+
+## Pages
+
+- [unbox](index.html.md): Finding imports in code
+- [API reference](api.html.md): | &#96;unbox&#96;   | Finding imports in code etc.   |
+- [unbox](_autosummary/unbox.html.md): Finding imports in code etc.
+- [unbox.base](_autosummary/unbox.base.html.md): Base functionality of unbox
+- [unbox.dependencies](_autosummary/unbox.dependencies.html.md): Functions to check for dependencies.
+- [unbox.missing_install_names](_autosummary/unbox.missing_install_names.html.md): Finding missing install names
+- [unbox.recipes](_autosummary/unbox.recipes.html.md): Recipes using unbox
+- [About this build](about-this-build.html.md): This documentation was built on &#42;&#42;2026-09-22 13:00 UTC&#42;&#42; from commit &lt;a href="https://github.com/i2m...
+
+## Optional
+
+- [unbox.md](unbox.md): Complete documentation in a single file.
+
+## Build
+
+- [build_info.json](build_info.json): build provenance (commit, version, tool versions, whether the docs match the package)

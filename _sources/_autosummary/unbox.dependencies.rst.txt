@@ -1,0 +1,14 @@
+unbox.dependencies
+==================
+
+.. automodule:: unbox.dependencies
+
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      dependencies_from_pypi
+      pypi_package_data
+      pypi_requires_dist
+   

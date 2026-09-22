@@ -1,0 +1,16 @@
+# unbox
+
+> Finding imports in code
+
+
+## Pages in this subsection
+
+- [unbox](unbox.html.md): Finding imports in code etc.
+- [unbox.base](unbox.base.html.md): Base functionality of unbox
+- [unbox.dependencies](unbox.dependencies.html.md): Functions to check for dependencies.
+- [unbox.missing_install_names](unbox.missing_install_names.html.md): Finding missing install names
+- [unbox.recipes](unbox.recipes.html.md): Recipes using unbox
+
+## Optional
+
+- [Top-level llms.txt](../llms.txt): Complete documentation index.

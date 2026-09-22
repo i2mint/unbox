@@ -1,0 +1,44 @@
+unbox.missing\_install\_names
+=============================
+
+.. automodule:: unbox.missing_install_names
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      DFLT_INSTALL_NAMES_FINDERS
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      dependencies_from_pyproject_content
+      dependencies_from_setup_configs
+      dependencies_from_setup_configs_content
+      dependency_diff
+      dependency_diff_for_pkg
+      find_install_names
+      get_import_names
+      get_import_to_install_name_map
+      get_install_names
+      get_module_obj
+      get_pyproject_path
+      get_setupcfg_path
+      install_names_for_imports
+      install_names_from_pyproject_file
+      install_names_from_setup_cfg_file
+      install_requires_of_module
+      map_if_found
+      module_requirements_according_to_pyproject
+      module_requirements_according_to_setupcfg
+      pkg_root_dir_name
+      print_missing_names
+   
+   .. rubric:: Exceptions
+
+   .. autosummary::
+   
+      ProbablyPythonPathError
+   

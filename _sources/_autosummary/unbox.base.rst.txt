@@ -1,0 +1,34 @@
+unbox.base
+==========
+
+.. automodule:: unbox.base
+
+   
+   .. rubric:: Module Attributes
+
+   .. autosummary::
+   
+      ModuleNameFilter
+   
+   .. rubric:: Functions
+
+   .. autosummary::
+   
+      documented_builtin_module_names
+      imports_for
+      is_importable
+      modname_to_modobj
+      modobj_to_modname
+      resolve_rootpath
+      scan_locally_for_standard_lib_names
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      ModuleImports
+      ModuleNamesImportedByModule
+      ModulesColl
+      ModulesImportedByModule
+      MyModuleGraph
+   
