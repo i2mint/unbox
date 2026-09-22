@@ -212,12 +212,19 @@ def documented_builtin_module_names():
         s = TextFiles(standard_lib_names_data_dir)
         yield from s[_your_python_version + ".csv"].split("\n")
     except KeyError as e:
+        if hasattr(sys, "stdlib_module_names"):
+            # The interpreter's own authoritative list (py3.10+) already covers
+            # this case -- it's unioned in at `builtin_module_names` below -- so
+            # the packaged-CSV gap is moot here. Skip the warning and the slow
+            # filesystem scan (see #6: this branch used to fire, with both, on
+            # every interpreter newer than the packaged CSVs' last version).
+            return
         warnings.warn(
             f"""
     It seems I can't access the python builtin names data, or can't find any
     documented list for your version ({_your_python_version})
     so I'll try to scan your system for these names.
-    You can also try to use 
+    You can also try to use
     `_update_documented_builtin_module_names(expected_python_version)`
     to update the data.
     """
@@ -227,7 +234,7 @@ def documented_builtin_module_names():
         except Exception as e:
             warnings.warn(
                 f"""
-    An unexpected error ({e}) occured when scanning your system. 
+    An unexpected error ({e}) occured when scanning your system.
     I'll just use the list for the default version ({DFLT_PYTHON_VERSION}).
     """
             )
