@@ -1,9 +1,12 @@
-"""Regression tests pinning bugs that were only caught by (fragile) doctests.
+"""Regression tests pinning bugs that doctests alone could not keep fixed.
 
-Each of the three bugs covered here was interpreter-version-sensitive: two of
-them presented differently on py3.10 and py3.12, and one was invisible on the
-development machine and only failed in CI. Doctests alone were not enough to
-keep them fixed, hence these explicit, environment-independent assertions.
+Bugs 1-3 were only ever caught by (fragile) doctests, and each was
+interpreter-version-sensitive: two of them presented differently on py3.10 and
+py3.12, and one was invisible on the development machine and only failed in CI.
+Bug 4 was the opposite problem -- unbox's own doctests could not see it at all,
+because the arrangement that hides it (tests kept outside the package) is
+exactly the workaround the fix makes unnecessary. Hence these explicit,
+environment-independent assertions.
 """
 
 import os
@@ -15,6 +18,7 @@ from unbox.missing_install_names import (
     _dist_name,
     dependencies_from_pyproject_content,
     dependency_diff,
+    dependency_diff_for_pkg,
     find_install_names,
     get_pyproject_path,
     get_setupcfg_path,
@@ -233,3 +237,95 @@ def test_unbox_finds_its_own_declared_dependencies():
     declared = list(find_install_names(unbox))
     assert 'dol>=0.3.49' in declared
     assert get_pyproject_path(unbox).endswith('pyproject.toml')
+
+
+# --------------------------------------------------------------------------------------
+# Bug 4: no notion of test-only imports.
+#
+# `imports_for` walked every module under the root, so a package's own
+# `tests/` (importing pytest, hypothesis, ...) was indistinguishable from its
+# runtime imports, and `dependency_diff_for_pkg` reported those test-only
+# imports as *missing* runtime dependencies. The scoping is opt-in
+# (`imports_for.runtime`, `exclude_tests=True`) so existing output is unchanged.
+
+RUNTIME_SCOPING_PYPROJECT = """\
+[project]
+name = "fakepkg"
+version = "0.0.1"
+dependencies = ["dol"]
+"""
+
+
+@pytest.fixture
+def pkg_with_in_package_tests(tmp_path):
+    """A package whose runtime code imports dol and whose tests import pytest.
+
+    ``dol`` (rather than, say, ``requests``) because ``test_dependency_diff_for_pkg_exclude_tests``
+    really imports this package, so its runtime import must be one unbox itself depends on.
+    """
+    pkg_dir = tmp_path / 'fakepkg'
+    (pkg_dir / 'tests').mkdir(parents=True)
+    (pkg_dir / '__init__.py').write_text('import os\nimport dol\n')
+    (pkg_dir / 'conftest.py').write_text('import pytest\n')
+    (pkg_dir / 'tests' / '__init__.py').write_text('')
+    (pkg_dir / 'tests' / 'test_x.py').write_text('import pytest\nimport hypothesis\n')
+    (tmp_path / 'pyproject.toml').write_text(RUNTIME_SCOPING_PYPROJECT)
+    return pkg_dir
+
+
+def test_imports_for_default_still_includes_test_only_imports(
+    pkg_with_in_package_tests,
+):
+    """Backcompat pin: the default scope is still *every* module under the root."""
+    assert imports_for.third_party(str(pkg_with_in_package_tests)) == {
+        'dol',
+        'pytest',
+        'hypothesis',
+    }
+
+
+def test_imports_for_runtime_excludes_test_only_imports(pkg_with_in_package_tests):
+    """`imports_for.runtime` drops tests/, test_*.py and conftest.py imports."""
+    assert imports_for.runtime(str(pkg_with_in_package_tests)) == {'dol'}
+
+
+def test_imports_for_exclude_is_explicit_and_composable(pkg_with_in_package_tests):
+    """`exclude` takes fnmatch segment patterns and/or predicates on the dotted name."""
+    root = str(pkg_with_in_package_tests)
+    assert imports_for.third_party(root, exclude=('tests',)) == {'dol', 'pytest'}
+    assert imports_for.third_party(
+        root, exclude=(lambda name: name.endswith('conftest'),)
+    ) == {'dol', 'pytest', 'hypothesis'}
+
+
+def test_dependency_diff_for_pkg_can_ignore_test_only_imports(
+    pkg_with_in_package_tests,
+):
+    """The user-visible defect: pytest reported as a *missing* runtime dependency."""
+    root = str(pkg_with_in_package_tests)
+    assert dependency_diff(install_names=root, import_names=root)[0] == {
+        'pytest',
+        'hypothesis',
+    }
+    assert (
+        dependency_diff(
+            install_names=root,
+            import_names=root,
+            imports_finder=imports_for.runtime,
+        )[0]
+        == set()
+    )
+
+
+def test_dependency_diff_for_pkg_exclude_tests(pkg_with_in_package_tests, monkeypatch):
+    """End-to-end: ``exclude_tests=True`` clears the false 'missing pytest'."""
+    import sys
+
+    monkeypatch.syspath_prepend(str(pkg_with_in_package_tests.parent))
+    monkeypatch.delitem(sys.modules, 'fakepkg', raising=False)
+    fakepkg = __import__('fakepkg')
+    try:
+        assert dependency_diff_for_pkg(fakepkg).missing == {'pytest', 'hypothesis'}
+        assert dependency_diff_for_pkg(fakepkg, exclude_tests=True).missing == set()
+    finally:
+        sys.modules.pop('fakepkg', None)

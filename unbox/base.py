@@ -2,9 +2,10 @@
 
 import os
 from contextlib import suppress
+from fnmatch import fnmatch
 from types import ModuleType
 from typing import Union
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import wraps
 from importlib import import_module
 import warnings
@@ -360,8 +361,53 @@ python_names = all_python_names | scanned_standard_lib_names
 
 ########################################################################################################################
 
+# Modules whose imports are (by convention) test-only: they are needed to *develop*
+# a package, not to *run* it. Used as the ``exclude`` of ``imports_for.runtime``.
+DFLT_TEST_MODULE_PATTERNS = ("test", "tests", "test_*", "*_test", "conftest")
 
-def imports_for(root, post=set):
+#: An ``exclude`` element: an fnmatch pattern for a dotted-name segment, or a
+#: predicate on the full dotted module name.
+ModuleNameFilter = Union[str, Callable[[str], bool]]
+
+
+def _module_name_excluder(exclude: Iterable[ModuleNameFilter]) -> Callable[[str], bool]:
+    """Make a predicate saying whether a dotted module name is excluded.
+
+    Each element of ``exclude`` is either a callable, applied to the full dotted
+    module name, or an ``fnmatch`` pattern, matched against *each dotted segment*
+    of the name. Segment matching is what makes ``'tests'`` exclude a whole
+    ``pkg.tests`` subpackage without needing to spell out its depth.
+
+    >>> is_excluded = _module_name_excluder(DFLT_TEST_MODULE_PATTERNS)
+    >>> is_excluded('pkg.tests.test_x'), is_excluded('pkg.conftest')
+    (True, True)
+    >>> is_excluded('pkg.test_stuff'), is_excluded('pkg.stuff_test')
+    (True, True)
+    >>> is_excluded('pkg.__init__'), is_excluded('pkg.contest'), is_excluded('pkg.util')
+    (False, False, False)
+
+    A callable element sees the whole name, so anything the patterns can't say
+    is still expressible:
+
+    >>> _module_name_excluder([lambda name: 'scrap' in name])('pkg.scrap.old')
+    True
+    """
+    exclude = tuple(exclude)
+    predicates = tuple(x for x in exclude if callable(x))
+    patterns = tuple(x for x in exclude if not callable(x))
+
+    def is_excluded(module_name: str) -> bool:
+        if any(predicate(module_name) for predicate in predicates):
+            return True
+        segments = module_name.split(".")
+        return any(
+            fnmatch(segment, pattern) for segment in segments for pattern in patterns
+        )
+
+    return is_excluded
+
+
+def imports_for(root, post=set, *, exclude: Iterable[ModuleNameFilter] = ()):
     """Get imported strings.
 
     :param root: Module, package, or filepath/folderpath thereof.
@@ -369,6 +415,11 @@ def imports_for(root, post=set):
         `set`, when order and repetition doesn't matter
         `collections.Counter`, to count number of modules where the module is imported,
         `lambda module: set(x.split('.')[0] for x in module)` if you only care about the top level package
+    :param exclude: Modules to leave out of the scan, as fnmatch patterns matched
+        against each segment of the dotted module name (e.g. ``'tests'``,
+        ``'test_*'``) and/or predicates on the full dotted name. Empty (the
+        default) means "scan everything", which is what ``unbox`` has always done.
+        See ``DFLT_TEST_MODULE_PATTERNS`` and the ``imports_for.runtime`` preset.
     :return:
 
     >>> import wave
@@ -379,11 +430,20 @@ def imports_for(root, post=set):
     Note: only a version-stable subset of ``wave``'s imports is asserted here --
     py3.10's ``wave`` imports ``audioop`` and ``chunk`` (both removed in 3.13),
     while py3.12's imports ``uuid`` instead.
+
+    An in-package ``tests/`` imports things (``pytest``, ``hypothesis``, ...) that
+    the package doesn't need at runtime; ``imports_for.runtime`` is the preset that
+    scopes them out (see ``DFLT_TEST_MODULE_PATTERNS``).
     """
     import itertools
 
     m = ModuleNamesImportedByModule(root)
-    imports_gen = itertools.chain.from_iterable(tuple(v) for v in m.values())
+    if exclude:
+        is_excluded = _module_name_excluder(exclude)
+        values = (v for k, v in m.items() if not is_excluded(k))
+    else:
+        values = m.values()
+    imports_gen = itertools.chain.from_iterable(tuple(v) for v in values)
     if callable(post):
         return post(imports_gen)
     else:
@@ -418,15 +478,33 @@ imports_for.first_level_count.__doc__ = (
     "count of imported first level names (e.g. 'os' instead of 'os.path.etc.)"
 )
 
-imports_for.third_party = partial(
-    imports_for,
-    post=lambda module: {
+
+def _third_party_first_level_names(module_names: NAMES) -> set:
+    """First-level import names that aren't builtin module names.
+
+    >>> sorted(_third_party_first_level_names(['os.path', 'dol.sources', 'sys']))
+    ['dol']
+    """
+    return {
         xx.split(".")[0]
-        for xx in module
+        for xx in module_names
         if xx.split(".")[0] not in builtin_module_names
-    },
-)
+    }
+
+
+imports_for.third_party = partial(imports_for, post=_third_party_first_level_names)
 imports_for.third_party.__doc__ = (
     "imported (first level) names that are not builtin names "
     "(most probably third party packages)"
+)
+
+imports_for.runtime = partial(
+    imports_for,
+    post=_third_party_first_level_names,
+    exclude=DFLT_TEST_MODULE_PATTERNS,
+)
+imports_for.runtime.__doc__ = (
+    "like ``imports_for.third_party``, but scoped to the modules that are needed to "
+    "*run* the package: imports made only by its tests (see "
+    "``DFLT_TEST_MODULE_PATTERNS``) are left out"
 )
