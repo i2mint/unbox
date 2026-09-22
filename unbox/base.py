@@ -29,7 +29,14 @@ def is_importable(name):
     }:  # we know these, but don't want to print or open browser page to verify!
         return True
     else:
-        with suppress(ModuleNotFoundError):
+        with suppress(ImportError):
+            # ImportError (not just its ModuleNotFoundError subclass): some
+            # stdlib modules exist as names but raise a platform-specific
+            # ImportError when actually imported -- e.g. `crypt` on Windows
+            # raises `ImportError("The crypt module is not supported on
+            # Windows")`, not ModuleNotFoundError, so it was escaping this
+            # check unsuppressed and crashing every module-level scan that
+            # calls is_importable (see #6 item 2 in i2mint/unbox).
             import_module(name)  # if this works...
             return True
     return False
