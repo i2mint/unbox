@@ -152,7 +152,9 @@ matched against each segment of the dotted module name. For anything else, pass 
 own `exclude` (patterns and/or predicates on the full dotted name) to `imports_for`:
 
 ```python
-imports_for.third_party(some_package, exclude=('tests', 'scrap', lambda name: 'examples' in name))
+imports_for.third_party(
+    some_package, exclude=("tests", "scrap", lambda name: "examples" in name)
+)
 ```
 
 ## Collections of python names
