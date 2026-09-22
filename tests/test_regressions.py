@@ -329,3 +329,18 @@ def test_dependency_diff_for_pkg_exclude_tests(pkg_with_in_package_tests, monkey
         assert dependency_diff_for_pkg(fakepkg, exclude_tests=True).missing == set()
     finally:
         sys.modules.pop('fakepkg', None)
+
+
+def test_imports_for_exclude_takes_a_single_pattern(pkg_with_in_package_tests):
+    """A bare string is one pattern, not an iterable of one-character patterns.
+
+    ``exclude='tests'`` used to be iterated into ``('t', 'e', 's', 't', 's')``,
+    which matches no real module segment, so it silently excluded nothing.
+    """
+    root = str(pkg_with_in_package_tests)
+    assert imports_for.third_party(root, exclude='tests') == imports_for.third_party(
+        root, exclude=('tests',)
+    )
+    assert imports_for.third_party(
+        root, exclude=lambda name: name.endswith('conftest')
+    ) == imports_for.third_party(root, exclude=(lambda name: name.endswith('conftest'),))

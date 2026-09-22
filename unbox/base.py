@@ -391,7 +391,17 @@ def _module_name_excluder(exclude: Iterable[ModuleNameFilter]) -> Callable[[str]
 
     >>> _module_name_excluder([lambda name: 'scrap' in name])('pkg.scrap.old')
     True
+
+    A single pattern or predicate is taken as one element -- a bare string is not
+    iterated into one-character patterns (which would silently exclude nothing):
+
+    >>> _module_name_excluder('tests')('pkg.tests.test_x')
+    True
+    >>> _module_name_excluder(lambda name: name.endswith('old'))('pkg.scrap.old')
+    True
     """
+    if isinstance(exclude, str) or callable(exclude):
+        exclude = (exclude,)
     exclude = tuple(exclude)
     predicates = tuple(x for x in exclude if callable(x))
     patterns = tuple(x for x in exclude if not callable(x))
