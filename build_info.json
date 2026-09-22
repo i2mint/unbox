@@ -1,32 +1,32 @@
 {
   "schema_version": 1,
-  "built_at": "2026-09-22T13:00:12Z",
+  "built_at": "2026-09-22T14:15:39Z",
   "package": {
     "name": "unbox",
-    "version": "0.1.12",
+    "version": "0.1.13",
     "display_name": "unbox",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "4306cc7ef656c65c571cd8caa779de4f4cdbba16",
-    "short_commit": "4306cc7",
+    "commit": "47871d775151c946ffd2670bce830c8c4c52f6b1",
+    "short_commit": "47871d7",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/unbox",
-    "commit_url": "https://github.com/i2mint/unbox/commit/4306cc7ef656c65c571cd8caa779de4f4cdbba16",
+    "commit_url": "https://github.com/i2mint/unbox/commit/47871d775151c946ffd2670bce830c8c4c52f6b1",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/unbox",
-    "sha": "4306cc7ef656c65c571cd8caa779de4f4cdbba16",
+    "sha": "47871d775151c946ffd2670bce830c8c4c52f6b1",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "35730365186",
-    "run_url": "https://github.com/i2mint/unbox/actions/runs/35730365186",
+    "run_id": "35738855779",
+    "run_url": "https://github.com/i2mint/unbox/actions/runs/35738855779",
     "server_url": "https://github.com"
   },
   "tools": {
@@ -60,14 +60,16 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.12",
-    "relation": "same",
+    "latest": "0.1.14",
+    "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/unbox && cd unbox\ngit checkout 4306cc7ef656c65c571cd8caa779de4f4cdbba16\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/unbox && cd unbox\ngit checkout 47871d775151c946ffd2670bce830c8c4c52f6b1\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": true,
-    "notes": []
+    "aligned": false,
+    "notes": [
+      "The documented version (0.1.13) is behind the latest release on PyPI (0.1.14): `pip install unbox` gives newer code than these docs describe."
+    ]
   }
 }

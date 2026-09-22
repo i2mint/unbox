@@ -1,4 +1,4 @@
-> built 2026-09-22 13:00 UTC from 4306cc7 (master) · unbox 0.1.12. Details: build_info.json
+> built 2026-09-22 14:15 UTC from 47871d7 (master) · unbox 0.1.13. Details: build_info.json
 
 # index.html.md
 
@@ -997,16 +997,18 @@ Generator of builtin names that don’t have a signature
 
 # About this build
 
-This documentation was built on **2026-09-22 13:00 UTC** from commit <a href="https://github.com/i2mint/unbox/commit/4306cc7ef656c65c571cd8caa779de4f4cdbba16"><code>4306cc7</code></a> on branch <code>master</code>, for **unbox 0.1.12** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-09-22 14:15 UTC** from commit <a href="https://github.com/i2mint/unbox/commit/47871d775151c946ffd2670bce830c8c4c52f6b1"><code>47871d7</code></a> on branch <code>master</code>, for **unbox 0.1.13** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.13) is behind the latest release on PyPI (0.1.14): `pip install unbox` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                     |
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/unbox/commit/4306cc7ef656c65c571cd8caa779de4f4cdbba16"><code>4306cc7ef656c65c571cd8caa779de4f4cdbba16</code></a> |
+| Commit              | <a href="https://github.com/i2mint/unbox/commit/47871d775151c946ffd2670bce830c8c4c52f6b1"><code>47871d775151c946ffd2670bce830c8c4c52f6b1</code></a> |
 | Branch              | <code>master</code>                                                                                                                                 |
 | Tags at this commit | none                                                                                                                                                |
 | Working tree        | clean                                                                                                                                               |
@@ -1017,9 +1019,9 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/unbox</code>                                                                  |
-| Run          | <a href="https://github.com/i2mint/unbox/actions/runs/35730365186">35730365186</a>         |
+| Run          | <a href="https://github.com/i2mint/unbox/actions/runs/35738855779">35738855779</a>         |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>4306cc7ef656c65c571cd8caa779de4f4cdbba16</code> (in the history of the built commit) |
+| Event commit | <code>47871d775151c946ffd2670bce830c8c4c52f6b1</code> (in the history of the built commit) |
 
 ## Tools
 
@@ -1044,13 +1046,13 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/unbox/0.1.12/">0.1.12</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/unbox/0.1.14/">0.1.14</a>, newer than the documented version (0.1.13).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/unbox && cd unbox
-git checkout 4306cc7ef656c65c571cd8caa779de4f4cdbba16
+git checkout 47871d775151c946ffd2670bce830c8c4c52f6b1
 pip install "epythet==0.2.12"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
