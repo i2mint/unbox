@@ -84,7 +84,7 @@ Get imported strings.
     `set`, when order and repetition doesn’t matter
     `collections.Counter`, to count number of modules where the module is imported,
     `lambda module: set(x.split('.')[0] for x in module)` if you only care about the top level package
-  * **exclude** ([`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]]) – Modules to leave out of the scan, as fnmatch patterns matched
+  * **exclude** ([`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`bool`](https://docs.python.org/3/builtins/functions.html#bool)]]]) – Modules to leave out of the scan, as fnmatch patterns matched
     against each segment of the dotted module name (e.g. `'tests'`,
     `'test_*'`) and/or predicates on the full dotted name. Empty (the
     default) means “scan everything”, which is what `unbox` has always done.
@@ -115,9 +115,6 @@ Resolve `obj` to an existing filesystem path.
 returned as-is). A *package* resolves to its directory, while a plain
 (non-package) module resolves to its `.py` file.
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
-
 ```pycon
 >>> import wave  # a plain module: has __file__ but no __path__
 >>> resolve_rootpath(wave).endswith('wave.py')
@@ -126,6 +123,9 @@ True
 >>> resolve_rootpath(unbox).endswith('unbox')
 True
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)
 
 ### unbox.base.scan_locally_for_standard_lib_names(include_underscored=True)
 

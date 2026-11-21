@@ -111,9 +111,6 @@ Extract the declared dependencies from `pyproject.toml` text (PEP 621).
 
 By default only the required `[project] dependencies` are yielded:
 
-* **Return type:**
-  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
-
 ```pycon
 >>> content = '''
 ... [project]
@@ -147,14 +144,17 @@ requires` are build-time requirements, not dependencies, so are ignored):
 []
 ```
 
+* **Return type:**
+  [`Iterator`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]
+
 ### unbox.missing_install_names.dependencies_from_setup_configs(setup_configs)
 
 Generate all dependencies from a mapping of setup.cfg files.
 
 * **Parameters:**
-  **setup_configs** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Mapping of filepath to setup.cfg file contents
+  **setup_configs** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`str`](https://docs.python.org/3/builtins/stdtypes.html#str)], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Mapping of filepath to setup.cfg file contents
 * **Yields:**
-  Individual dependency strings from all setup.cfg files
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) – Individual dependency strings from all setup.cfg files
 * **Return type:**
   [*Iterator*](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[*str*](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
@@ -175,7 +175,7 @@ Extract dependencies from a single setup.cfg file content.
 * **Parameters:**
   **setup_cfg_content** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str)) – The text content of a setup.cfg file
 * **Yields:**
-  Individual dependency strings
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) – Individual dependency strings
 * **Return type:**
   [*Iterator*](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterator)[[*str*](https://docs.python.org/3/builtins/stdtypes.html#str)]
 
@@ -186,7 +186,7 @@ Diff declared install names against the install names the imports call for.
 See `dependency_diff_for_pkg`, which is the same thing for a package.
 
 * **Parameters:**
-  **imports_finder** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – How to extract import names from `import_names` when it
+  **imports_finder** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – How to extract import names from `import_names` when it
   is a module/package/path. Defaults to `imports_for.third_party`; pass
   `imports_for.runtime` to leave out imports made only by the package’s tests.
 
@@ -205,7 +205,7 @@ Options (you won’t have to deal with most of the time):
 * **Parameters:**
   * **strict** – Whether you want to allow only those names that are explicitly
     declared in `import_to_install_name_map` or not. (Default is False).
-  * **install_names_finder** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A function that takes the package and finds the
+  * **install_names_finder** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – A function that takes the package and finds the
     declared install names (by default looks in `pyproject.toml`, then
     `setup.cfg`, but you can make it look for `requirements.txt`, or where-ever).
   * **exclude_tests** ([`bool`](https://docs.python.org/3/builtins/functions.html#bool)) – Whether to ignore the imports made only by the package’s
@@ -255,7 +255,7 @@ projects.
 Get the import names from the given input.
 
 * **Parameters:**
-  * **import_names** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The input import names, which can be a string, an iterable,
+  * **import_names** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – The input import names, which can be a string, an iterable,
     or a module/package object.
   * **imports_finder** – A function to find imports in the given input.
 * **Return type:**
@@ -267,27 +267,27 @@ Get the import names from the given input.
 
 Flexible search for the `pyproject.toml` path for an object x
 
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
-
 ```pycon
 >>> import unbox
 >>> get_pyproject_path(unbox).endswith('pyproject.toml')
 True
 ```
 
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
+
 ### unbox.missing_install_names.get_setupcfg_path(x)
 
 Flexible search for the `setup.cfg` path for an object x
-
-* **Return type:**
-  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ```pycon
 >>> import unbox
 >>> get_setupcfg_path(unbox).endswith('setup.cfg')
 True
 ```
+
+* **Return type:**
+  [`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`None`](https://docs.python.org/3/builtins/constants.html#None)
 
 ### unbox.missing_install_names.install_names_for_imports(import_names, import_to_install_name_map=None, strict=False, \*, imports_finder=functools.partial(<function imports_for>, post=<function \_third_party_first_level_names>))
 
@@ -305,12 +305,12 @@ of just requiring `numpy` you may want to have `numpy >= 1.3` in your
 `setup.cfg` or `requirements.txt`.
 
 * **Parameters:**
-  * **import_names** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – An iterable of import names, or a module, package,
+  * **import_names** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – An iterable of import names, or a module, package,
     or filepath/folderpath thereof, to be able to extract them
   * **import_to_install_name_map** ([`dict`](https://docs.python.org/3/builtins/stdtypes.html#dict) | [`None`](https://docs.python.org/3/builtins/constants.html#None)) – A dict mapping import names (keys) to install
     names
   * **strict** – Whether to assert that all import_names are in the map
-  * **imports_finder** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – How to extract import names when `import_names` is a
+  * **imports_finder** ([`Callable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable)[[[`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]], [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – How to extract import names when `import_names` is a
     module/package/path rather than an iterable of names. Defaults to
     `imports_for.third_party` (every module under the root); pass
     `imports_for.runtime` to leave out imports made only by the package’s tests.
@@ -325,7 +325,7 @@ Get dependencies from a package’s `pyproject.toml`.
 * **Parameters:**
   * **pkg** – A module/package object, or a path to a project folder, a package’s
     `__init__.py`, or a `pyproject.toml` file.
-  * **extras** (`Union`[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Whether to also include `[project.optional-dependencies]`
+  * **extras** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Whether to also include `[project.optional-dependencies]`
     (see `dependencies_from_pyproject_content`).
 * **Return type:**
   [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)
@@ -395,7 +395,7 @@ Get dependencies from a package’s `pyproject.toml`.
 * **Parameters:**
   * **pkg** – A module/package object, or a path to a project folder, a package’s
     `__init__.py`, or a `pyproject.toml` file.
-  * **extras** (`Union`[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Whether to also include `[project.optional-dependencies]`
+  * **extras** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`bool`](https://docs.python.org/3/builtins/functions.html#bool), [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)]]) – Whether to also include `[project.optional-dependencies]`
     (see `dependencies_from_pyproject_content`).
 * **Return type:**
   [`Iterable`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str)] | [`None`](https://docs.python.org/3/builtins/constants.html#None)

@@ -2,16 +2,18 @@
 
 # About this build
 
-This documentation was built on **2026-09-22 14:43 UTC** from commit <a href="https://github.com/i2mint/unbox/commit/261fd7e0094f6175142a7f8a88878bae7e6e3c1f"><code>261fd7e</code></a> on branch <code>master</code>, for **unbox 0.1.14** (from <code>pyproject.toml</code>).
+This documentation was built on **2026-11-21 18:29 UTC** from commit <a href="https://github.com/i2mint/unbox/commit/8d0c2b999997ff41ba1c959f4a7808ec95f35bd2"><code>8d0c2b9</code></a> on branch <code>master</code>, for **unbox 0.1.15** (from <code>pyproject.toml</code>).
 
-#### NOTE
-Nothing suggests a mismatch: the tree was clean at the commit above, and the documented version is the one on PyPI.
+#### WARNING
+The documentation and the package may be misaligned:
+
+- The documented version (0.1.15) is behind the latest release on PyPI (0.1.16): `pip install unbox` gives newer code than these docs describe.
 
 ## Source
 
 |                     |                                                                                                                                                     |
 |---------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
-| Commit              | <a href="https://github.com/i2mint/unbox/commit/261fd7e0094f6175142a7f8a88878bae7e6e3c1f"><code>261fd7e0094f6175142a7f8a88878bae7e6e3c1f</code></a> |
+| Commit              | <a href="https://github.com/i2mint/unbox/commit/8d0c2b999997ff41ba1c959f4a7808ec95f35bd2"><code>8d0c2b999997ff41ba1c959f4a7808ec95f35bd2</code></a> |
 | Branch              | <code>master</code>                                                                                                                                 |
 | Tags at this commit | none                                                                                                                                                |
 | Working tree        | clean                                                                                                                                               |
@@ -22,18 +24,18 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 |              |                                                                                            |
 |--------------|--------------------------------------------------------------------------------------------|
 | Repository   | <code>i2mint/unbox</code>                                                                  |
-| Run          | <a href="https://github.com/i2mint/unbox/actions/runs/35742179606">35742179606</a>         |
+| Run          | <a href="https://github.com/i2mint/unbox/actions/runs/44935653291">44935653291</a>         |
 | Ref          | <code>refs/heads/master</code>                                                             |
-| Event commit | <code>261fd7e0094f6175142a7f8a88878bae7e6e3c1f</code> (in the history of the built commit) |
+| Event commit | <code>8d0c2b999997ff41ba1c959f4a7808ec95f35bd2</code> (in the history of the built commit) |
 
 ## Tools
 
 |          |         |
 |----------|---------|
-| epythet  | 0.2.12  |
-| Sphinx   | 9.1.0   |
+| epythet  | 0.2.23  |
+| Sphinx   | 9.1.1   |
 | docutils | 0.22.4  |
-| Python   | 3.12.14 |
+| Python   | 3.12.16 |
 
 ## Configuration as resolved
 
@@ -49,14 +51,14 @@ Nothing suggests a mismatch: the tree was clean at the commit above, and the doc
 
 ## Package on PyPI
 
-Latest release: <a href="https://pypi.org/project/unbox/0.1.14/">0.1.14</a>, the same as the documented version.
+Latest release: <a href="https://pypi.org/project/unbox/0.1.16/">0.1.16</a>, newer than the documented version (0.1.15).
 
 ## Reproduce
 
 ```bash
 git clone https://github.com/i2mint/unbox && cd unbox
-git checkout 261fd7e0094f6175142a7f8a88878bae7e6e3c1f
-pip install "epythet==0.2.12"
+git checkout 8d0c2b999997ff41ba1c959f4a7808ec95f35bd2
+pip install "epythet==0.2.23"
 epythet quickstart . --ignore tests/ scrap/ examples/
 ```
 

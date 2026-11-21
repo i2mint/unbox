@@ -16,10 +16,10 @@ Recipes using unbox
 
 ### Classes
 
-| [`ModuleStrings`](#unbox.recipes.ModuleStrings)(rootdir[, subpath, ...])   | Keys are module dotpaths and values are modules   |
-|-------------------------------------------------------------------------------------------|---------------------------------------------------|
+| [`ModuleStrings`](#unbox.recipes.ModuleStrings)(\*args[, read_retry, ...])   | Keys are module dotpaths and values are modules   |
+|---------------------------------------------------------------------------------------------|---------------------------------------------------|
 
-### *class* unbox.recipes.ModuleStrings(rootdir, subpath='', pattern_for_field=None, max_levels=None, , include_hidden=False, assert_rootdir_existence=False)
+### *class* unbox.recipes.ModuleStrings(\*args, read_retry=None, strict_key_errors=False, \*\*kwargs)
 
 Bases: `Store`
 
@@ -64,7 +64,7 @@ base: ['builtins', 'collections', 'contextlib']
 Generates (k, line) pairs for every line of every k that has a pattern match
 
 * **Parameters:**
-  * **files** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]) – A source of py files (e.g. module, root directory, or a Mapping itself)
+  * **files** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]) – A source of py files (e.g. module, root directory, or a Mapping itself)
   * **pattern** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)) – A string or re.Pattern to match and count
 * **Returns:**
   A generator of (k, pattern_counts) pairs
@@ -77,7 +77,7 @@ key_and_pattern_counts
 Generates (k, pattern_counts) pairs from scanning a store of .py files it scans, counting pattern matches
 
 * **Parameters:**
-  * **files** (`Union`[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]) – A source of py files (e.g. module, root directory, or a Mapping itself)
+  * **files** ([`Union`](https://docs.python.org/3/library/typing.html#typing.Union)[[`str`](https://docs.python.org/3/builtins/stdtypes.html#str), [`Mapping`](https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping), [`ModuleType`](https://docs.python.org/3/library/types.html#types.ModuleType)]) – A source of py files (e.g. module, root directory, or a Mapping itself)
   * **pattern** ([`str`](https://docs.python.org/3/builtins/stdtypes.html#str) | [`Pattern`](https://docs.python.org/3/library/re.html#re.Pattern)) – A string or re.Pattern to match and count
 * **Returns:**
   A generator of (k, pattern_counts) pairs

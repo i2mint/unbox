@@ -1,39 +1,39 @@
 {
   "schema_version": 1,
-  "built_at": "2026-09-22T14:43:51Z",
+  "built_at": "2026-11-21T18:29:08Z",
   "package": {
     "name": "unbox",
-    "version": "0.1.14",
+    "version": "0.1.15",
     "display_name": "unbox",
     "source": "pyproject.toml"
   },
   "git": {
     "available": true,
-    "commit": "261fd7e0094f6175142a7f8a88878bae7e6e3c1f",
-    "short_commit": "261fd7e",
+    "commit": "8d0c2b999997ff41ba1c959f4a7808ec95f35bd2",
+    "short_commit": "8d0c2b9",
     "branch": "master",
     "tags": [],
     "dirty": false,
     "remote_url": "https://github.com/i2mint/unbox",
-    "commit_url": "https://github.com/i2mint/unbox/commit/261fd7e0094f6175142a7f8a88878bae7e6e3c1f",
+    "commit_url": "https://github.com/i2mint/unbox/commit/8d0c2b999997ff41ba1c959f4a7808ec95f35bd2",
     "error": null
   },
   "ci": {
     "provider": "github",
     "repository": "i2mint/unbox",
-    "sha": "261fd7e0094f6175142a7f8a88878bae7e6e3c1f",
+    "sha": "8d0c2b999997ff41ba1c959f4a7808ec95f35bd2",
     "sha_in_history": true,
     "ref": "refs/heads/master",
     "ref_name": "master",
-    "run_id": "35742179606",
-    "run_url": "https://github.com/i2mint/unbox/actions/runs/35742179606",
+    "run_id": "44935653291",
+    "run_url": "https://github.com/i2mint/unbox/actions/runs/44935653291",
     "server_url": "https://github.com"
   },
   "tools": {
-    "epythet": "0.2.12",
-    "sphinx": "9.1.0",
+    "epythet": "0.2.23",
+    "sphinx": "9.1.1",
     "docutils": "0.22.4",
-    "python": "3.12.14"
+    "python": "3.12.16"
   },
   "config": {
     "theme": "auto",
@@ -60,14 +60,16 @@
   },
   "pypi": {
     "checked": true,
-    "latest": "0.1.14",
-    "relation": "same",
+    "latest": "0.1.16",
+    "relation": "behind",
     "error": null
   },
-  "reproduce": "git clone https://github.com/i2mint/unbox && cd unbox\ngit checkout 261fd7e0094f6175142a7f8a88878bae7e6e3c1f\npip install \"epythet==0.2.12\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
+  "reproduce": "git clone https://github.com/i2mint/unbox && cd unbox\ngit checkout 8d0c2b999997ff41ba1c959f4a7808ec95f35bd2\npip install \"epythet==0.2.23\"\nepythet quickstart . --ignore tests/ scrap/ examples/",
   "warnings": [],
   "alignment": {
-    "aligned": true,
-    "notes": []
+    "aligned": false,
+    "notes": [
+      "The documented version (0.1.15) is behind the latest release on PyPI (0.1.16): `pip install unbox` gives newer code than these docs describe."
+    ]
   }
 }
