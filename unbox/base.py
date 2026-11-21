@@ -149,8 +149,8 @@ def modname_to_modobj(self, modname):
 # TODO: Handle warnings -- there are way too many, way too often
 @wrap_kvs(
     name="NamesImportedByModule",
-    key_of_id=modobj_to_modname,
-    id_of_key=modname_to_modobj,
+    key_decoder=modobj_to_modname,
+    key_encoder=modname_to_modobj,
     __module__=__name__,
 )
 class ModuleNamesImportedByModule(ModulesImportedByModule):
