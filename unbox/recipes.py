@@ -28,8 +28,8 @@ def signature_less_builtin_obj_names(caller="signature"):
 
 # TODO: Replace wasteful LocalTextStore base with file collection base and key->importlib.import_module(key) def of values
 @wrap_kvs(
-    key_of_id=lambda k: k.replace(".py", "").replace(os.path.sep, "."),
-    id_of_key=lambda k: k.replace(".", os.path.sep) + ".py",
+    key_decoder=lambda k: k.replace(".py", "").replace(os.path.sep, "."),
+    key_encoder=lambda k: k.replace(".", os.path.sep) + ".py",
     postget=lambda k, v: importlib.import_module(k),
 )
 @filt_iter(filt=lambda k: k.endswith(".py"))
